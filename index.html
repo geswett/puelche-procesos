@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puelche HC — Gestión de Procesos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F6F3;
+  --surface:#FFFFFF;
+  --surface2:#F0EEE9;
+  --border:#D8D5CE;
+  --border2:#C8C5BD;
+  --text:#1A1917;
+  --text2:#5C5A55;
+  --text3:#9A9891;
+  --accent:#1A6B4A;
+  --accent-bg:#E5F4EE;
+  --blue:#1A4D8F;
+  --blue-bg:#E5EEFA;
+  --amber:#7A4F0A;
+  --amber-bg:#FDF0D8;
+  --purple:#4A3A8F;
+  --purple-bg:#EEEAF8;
+  --red:#8F1A1A;
+  --red-bg:#FAE5E5;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);
+  --radius:8px;
+  --radius-lg:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);background:var(--bg);min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:12px;height:52px;position:sticky;top:0;z-index:100;flex-wrap:wrap}
+.logo{font-size:15px;font-weight:600;color:var(--text);flex:1;white-space:nowrap}
+.logo span{color:var(--accent)}
+.tabs{display:flex;gap:2px}
+.tab{padding:6px 14px;border:none;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:500;background:transparent;color:var(--text2);transition:all .15s}
+.tab:hover{background:var(--surface2)}
+.tab.active{background:var(--text);color:#fff}
+.btn{padding:6px 14px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:500;background:var(--surface);color:var(--text);transition:all .15s;display:flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--border2);background:var(--surface2)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:#155c3f}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-danger{color:var(--red);border-color:#F09595}
+.btn-danger:hover{background:var(--red-bg)}
+
+/* FILTERS */
+.filters{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;position:sticky;top:52px;z-index:95}
+.filters select,.filters input[type=text]{font-size:13px;padding:5px 9px;height:32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none}
+.filters select:focus,.filters input:focus{border-color:var(--accent)}
+.cnt{font-size:12px;color:var(--text3);margin-left:auto}
+
+/* CONTENT */
+.content{padding:14px 16px}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 160px);border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);width:100%}
+.table-wrap thead th{position:sticky;top:0;z-index:10;box-shadow:0 1px 0 var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 10px;background:var(--surface2);border-bottom:1px solid var(--border);font-weight:600;font-size:11px;color:var(--text2);white-space:nowrap}
+th.sort{cursor:pointer}
+th.sort:hover{color:var(--text)}
+td{padding:0;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFAF8}
+.cell{padding:7px 8px;min-height:34px;display:flex;align-items:center;gap:4px}
+/* Editable */
+.editable{cursor:pointer}
+.editable:hover .cell{background:#F5F4F0;border-radius:4px}
+.editable:hover .cell::after{content:'✎';font-size:10px;color:var(--text3);margin-left:auto;flex-shrink:0}
+/* Inline inputs */
+.cell-input{width:100%;padding:5px 7px;border:2px solid var(--accent);border-radius:5px;background:#fff;color:var(--text);font-size:13px;font-family:inherit;outline:none}
+.cell-select{width:100%;padding:4px 6px;border:2px solid var(--accent);border-radius:5px;background:#fff;color:var(--text);font-size:12px;font-family:inherit;outline:none}
+.cell-date{width:100%;padding:4px 6px;border:2px solid var(--accent);border-radius:5px;background:#fff;color:var(--text);font-size:12px;outline:none}
+/* cons editor */
+.cons-editor{padding:6px 8px;display:flex;flex-direction:column;gap:4px;background:#F5F9F7;border-radius:4px}
+.cons-row{display:flex;gap:5px;align-items:center}
+.cons-lbl{font-size:10px;font-weight:600;color:var(--text2);min-width:18px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-cerrado{background:var(--blue-bg);color:var(--blue)}
+.b-suspendido{background:var(--amber-bg);color:var(--amber)}
+.b-inicio{background:var(--purple-bg);color:var(--purple)}
+.b-medio{background:#E0F0FF;color:#1A5A8F}
+.b-final{background:var(--accent-bg);color:var(--accent)}
+.b-aprobacion{background:var(--amber-bg);color:var(--amber)}
+.b-vacio{background:var(--surface2);color:var(--text3)}
+.b-activo{background:var(--accent-bg);color:var(--accent)}
+.cons-pill{display:inline-flex;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:600;margin:1px;background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.cons-pill.ap{opacity:.7}
+.hint{font-size:12px;color:var(--text3)}
+.del-btn{opacity:0;transition:opacity .15s;background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:3px 6px;border-radius:4px}
+.del-btn:hover{color:var(--red);background:var(--red-bg)}
+tr:hover .del-btn{opacity:1}
+
+/* OVERLAY */
+.overlay{display:none;position:fixed;inset:0;background:rgba(20,18,15,0.55);z-index:300;align-items:flex-start;justify-content:center;padding-top:40px;overflow-y:auto;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);padding:22px;width:96%;max-width:460px;margin-bottom:40px;box-shadow:var(--shadow)}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:16px;font-weight:600}
+.mc{background:none;border:none;cursor:pointer;color:var(--text2);font-size:22px;line-height:1;padding:0 4px;border-radius:4px}
+.mc:hover{color:var(--text);background:var(--surface2)}
+.nf{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.nf label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.nf select,.nf input{font-size:13px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border .15s}
+.nf select:focus,.nf input:focus{border-color:var(--accent)}
+.fa{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+.form-sep{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 10px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* DETAIL MODAL */
+.dm{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);padding:22px;width:96%;max-width:580px;margin-bottom:40px;box-shadow:var(--shadow)}
+/* Timeline */
+.tl-wrap{background:var(--surface2);border-radius:var(--radius);padding:14px 12px;margin:14px 0}
+.tl{display:flex;align-items:flex-start;overflow-x:auto;padding-bottom:4px}
+.tl-step{display:flex;flex-direction:column;align-items:center;flex:1;min-width:76px}
+.tl-conn{display:flex;align-items:center;flex:1}
+.tl-line{flex:1;height:2px;background:var(--border)}
+.tl-line.done{background:var(--accent)}
+.tl-dot{width:13px;height:13px;border-radius:50%;background:var(--border);border:2px solid var(--border);flex-shrink:0}
+.tl-dot.done{background:var(--accent);border-color:var(--accent)}
+.tl-dot.next{background:#fff;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-bg)}
+.tl-lbl{font-size:10px;color:var(--text2);text-align:center;margin-top:6px;line-height:1.3;font-weight:500}
+.tl-dt{font-size:10px;color:var(--text3);text-align:center;margin-top:2px;font-weight:600}
+.d-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0}
+.d-field label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px}
+.d-field span{font-size:13px}
+.cand-box{background:var(--accent-bg);border:1px solid #B8DCCA;border-radius:var(--radius);padding:10px 12px;margin:10px 0}
+.cand-box label{font-size:10px;font-weight:600;color:var(--accent);text-transform:uppercase;display:block;margin-bottom:3px}
+.cand-box span{font-size:14px;font-weight:600;color:var(--accent)}
+.notes-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-top:10px}
+.notes-box label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px}
+.notes-box p{font-size:13px;color:var(--text2);line-height:1.5}
+
+/* DASHBOARD */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+.metric-lbl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.metric-val{font-size:28px;font-weight:700;color:var(--text)}
+.metric-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px}
+.sec{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.bar-lbl{min-width:50px;font-size:12px;color:var(--text2);text-align:right}
+.bar-track{flex:1;height:16px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .3s}
+.bar-val{min-width:28px;font-size:12px;color:var(--text2)}
+.bar-sub{font-size:10px;color:var(--text3)}
+
+/* CARGAS */
+.ct-wrap{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px}
+.ct{width:100%;border-collapse:collapse;font-size:13px}
+.ct th{padding:9px 12px;background:var(--surface2);border-bottom:1px solid var(--border);border-right:1px solid var(--border);font-weight:700;font-size:11px;text-align:center;color:var(--text2)}
+.ct th.left{text-align:left}
+.ct td{padding:8px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);text-align:center;font-size:13px}
+.ct td:last-child,.ct th:last-child{border-right:none}
+.ct td.name{font-weight:600;text-align:left;background:var(--surface)}
+.ct td.total{font-weight:700;background:var(--surface2)}
+.ct tr:last-child td{border-bottom:none}
+.ct tr.total-row td{font-weight:700;border-top:2px solid var(--border2);background:var(--surface2)}
+.pond-hi{background:var(--amber-bg);color:var(--amber);border-radius:99px;padding:2px 8px;font-weight:700;font-size:12px}
+.pond-md{background:var(--blue-bg);color:var(--blue);border-radius:99px;padding:2px 8px;font-weight:700;font-size:12px}
+.pond-lo{background:var(--accent-bg);color:var(--accent);border-radius:99px;padding:2px 8px;font-weight:700;font-size:12px}
+
+/* TIEMPOS */
+.t-table{width:100%;border-collapse:collapse;font-size:13px}
+.t-table th{padding:8px 10px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;text-align:center;color:var(--text2)}
+.t-table th.left{text-align:left}
+.t-table td{padding:6px 10px;border:1px solid var(--border);text-align:center}
+.t-table td.left{text-align:left}
+.t-table tr.tot td{font-weight:700;background:var(--surface2)}
+.t-bar{height:10px;border-radius:2px;background:var(--accent);display:inline-block;vertical-align:middle;margin-left:6px}
+
+/* SETTINGS modal */
+.tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.tag-item{display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600}
+.tag-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;line-height:1;padding:0 2px;border-radius:3px}
+.tag-del:hover{color:var(--red)}
+.tag-add{display:flex;gap:6px}
+.tag-add input{flex:1;padding:6px 9px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;outline:none}
+.tag-add input:focus{border-color:var(--accent)}
+.tag-add button{padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:600}
+
+/* SORTIND */
+.si{font-size:9px;margin-left:2px;color:var(--accent)}
+
+@media(max-width:700px){
+  .dash-grid{grid-template-columns:1fr}
+  .topbar{height:auto;padding:8px 12px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Puelche <span>HC</span></div>
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('procesos',this)">Procesos</button>
+
+    <button class="tab" onclick="setTab('cargas',this)">Cargas</button>
+    <button class="tab" onclick="setTab('tiempos',this)">Tiempos</button>
+    <button class="tab" onclick="setTab('cierres',this)">Cierres</button>
+  </div>
+  <button class="btn" onclick="openSettings()" title="Gestionar consultoras y apoyos">⚙ Consultoras</button>
+  <button class="btn btn-primary" onclick="openNew()">+ Nuevo</button>
+</div>
+<div id="status-bar" style="display:none;padding:8px 20px;font-size:13px;font-weight:500;transition:all .3s"></div>
+
+<div class="filters" id="filter-bar">
+  <select id="f-status" onchange="render()">
+    <option value="Activo">Activos</option>
+    <option value="">Todos</option>
+    <option value="Inactivo">Inactivos</option>
+  </select>
+  <select id="f-etapa" onchange="render()"><option value="">Todas las etapas</option></select>
+  <select id="f-cons" onchange="render()"><option value="">Todas las consultoras</option></select>
+  <select id="f-rep" onchange="render()">
+    <option value="">Reposición: Todos</option>
+    <option value="SI">Reposición: Sí</option>
+    <option value="NO">Reposición: No</option>
+  </select>
+  <select id="f-tipo" onchange="render()">
+    <option value="">Todos los tipos</option>
+    <option value="Gerente">Gerente</option>
+    <option value="Jefatura">Jefatura</option>
+    <option value="Profesional">Profesional</option>
+  </select>
+  <input type="text" id="f-search" placeholder="Buscar empresa o cargo..." oninput="render()" style="flex:1;min-width:140px;max-width:280px">
+  <span class="cnt" id="cnt"></span>
+</div>
+
+<div id="main-content" class="content"></div>
+
+<!-- NUEVO PROCESO -->
+<div class="overlay" id="ov-new">
+<div class="modal">
+  <div class="modal-hdr"><div class="modal-title">Nuevo proceso</div><button class="mc" onclick="closeNew()">×</button></div>
+  <div class="nf"><label>Empresa</label><input id="n-emp" placeholder="Ej: CERMAQ"></div>
+  <div class="nf"><label>Cargo</label><input id="n-proc" placeholder="Ej: Gerente de Operaciones"></div>
+  <div class="nf"><label>Tipo de cargo</label>
+    <select id="n-tipo"><option value="">— Sin tipo —</option><option value="Gerente">Gerente</option><option value="Jefatura">Jefatura</option><option value="Profesional">Profesional</option></select>
+  </div>
+  <div class="nf"><label>Consultora 1</label><select id="n-c1"><option value="">— Sin asignar —</option></select></div>
+  <div class="nf"><label>Consultora 2 (opcional)</label><select id="n-c2"><option value="">— Sin segunda —</option></select></div>
+  <div class="nf"><label>Apoyo</label><select id="n-ap"><option value="">— Sin apoyo —</option></select></div>
+  <div class="nf"><label>Etapa</label>
+    <select id="n-et"><option value="">— Sin etapa —</option><option value="Esperando Aprobación">Esperando Aprobación</option><option value="Inicio">Inicio</option><option value="Medio">Medio</option><option value="Final">Final</option></select>
+  </div>
+  <div class="nf"><label>¿Es reposición?</label>
+    <select id="n-rep"><option value="NO" selected>No</option><option value="SI">Sí</option></select>
+  </div>
+  <div class="fa">
+    <button class="btn" onclick="closeNew()">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveNew()">Crear proceso</button>
+  </div>
+</div>
+</div>
+
+<!-- EDITAR (cierre completo) -->
+<div class="overlay" id="ov-edit">
+<div class="modal" style="max-width:480px">
+  <div class="modal-hdr"><div class="modal-title">Cerrar proceso</div><button class="mc" onclick="closeEdit()">×</button></div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Completa los datos de cierre para <strong id="e-title"></strong></div>
+  <div class="nf"><label>Candidato seleccionado</label><input id="e-cand" placeholder="Nombre del candidato"></div>
+  <div class="nf"><label>Firma Carta Oferta</label><input type="date" id="e-fco"></div>
+  <div class="nf"><label>Ingreso candidato</label><input type="date" id="e-fi"></div>
+  <div class="fa">
+    <button class="btn" onclick="closeEdit()">Completar después</button>
+    <button class="btn btn-primary" onclick="saveEdit()">Guardar</button>
+  </div>
+</div>
+</div>
+
+<!-- DETALLE -->
+<div class="overlay" id="ov-detail">
+<div class="dm">
+  <div class="modal-hdr">
+    <div>
+      <div class="modal-title" id="d-title"></div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px" id="d-sub"></div>
+    </div>
+    <button class="mc" onclick="document.getElementById('ov-detail').classList.remove('open')">×</button>
+  </div>
+  <div id="d-body"></div>
+</div>
+</div>
+
+<!-- SETTINGS -->
+<div class="overlay" id="ov-settings">
+<div class="modal" style="max-width:500px">
+  <div class="modal-hdr"><div class="modal-title">⚙ Gestionar equipo</div><button class="mc" onclick="document.getElementById('ov-settings').classList.remove('open')">×</button></div>
+  <div class="sec">Consultoras</div>
+  <div id="tag-cons" class="tag-list"></div>
+  <div class="tag-add">
+    <input id="new-cons-key" placeholder="Sigla (ej: AB)" maxlength="5" style="max-width:80px">
+    <input id="new-cons-name" placeholder="Nombre completo">
+    <button onclick="addPerson('cons')">Agregar</button>
+  </div>
+  <div class="form-sep">Apoyos</div>
+  <div id="tag-ap" class="tag-list"></div>
+  <div class="tag-add">
+    <input id="new-ap-key" placeholder="Sigla" maxlength="5" style="max-width:80px">
+    <input id="new-ap-name" placeholder="Nombre completo">
+    <button onclick="addPerson('ap')">Agregar</button>
+  </div>
+  <div class="fa"><button class="btn btn-primary" onclick="document.getElementById('ov-settings').classList.remove('open');initSelects();render()">Listo</button></div>
+</div>
+</div>
+
+<script>
+// ─── PERSONAS (editables) ───────────────────────────────────────────────────
+let CONSULTORAS = [
+  {k:'GT', n:'Gloria Tironi'},
+  {k:'ML', n:'Mónica Lira'},
+  {k:'BV', n:'Beverlyn Von Freeden'},
+  {k:'RA', n:'Rosario Arratia'},
+  {k:'MJC', n:'María José Castaño'},
+  {k:'CC', n:'Carla Cerón'},
+];
+let APOYOS = [
+  {k:'CdV', n:'Catalina del Valle'},
+  {k:'CSC', n:'Carmen Santa Cruz'},
+  {k:'MJC', n:'María José Castaño'},
+  {k:'CC', n:'Carla Cerón'},
+];
+
+function CMAP(k){ 
+  const a=[...CONSULTORAS,...APOYOS].find(x=>x.k===k); 
+  return a?a.n:k; 
+}
+function CONS_OPTS(){ return CONSULTORAS.map(c=>c.k); }
+function APOYO_OPTS(){ return APOYOS.map(a=>a.k); }
+
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const FIELDS=['id','emp','proc','tipo','n','c1','c2','ap','st','et','rep','acep','lp','apr','ll','fco','fi','cand','sp','dur','mc','ac'];
+let DATA=[
+[0,"AQUACHILE","Analista de Compensaciones","",1,"","","","Inactivo","","",null,"2023-10-03","2023-10-10","2023-10-24",null,null,"","",994,null,null],
+[1,"AQUACHILE","Analista de Reclutamiento y Selección","",null,"","","","Inactivo","","",null,"2023-05-03","2023-10-10","2023-10-24",null,null,"","",994,null,null],
+[2,"AQUACHILE","Lider de Compensaciones","",null,"","","","Inactivo","","",null,"2023-10-03","2023-10-17","2023-10-31",null,null,"","",987,null,null],
+[3,"AUSTRAL GRANOS","Supervisor RRHH","",null,"","","","Inactivo","","",null,null,null,null,null,null,"","",null,null,null],
+[4,"BIOMAR","Ingeniero de Procesos","",null,"","","","Inactivo","","",null,null,null,null,null,null,"","",null,null,null],
+[5,"BIOMAR","Asistente Senior RRHH","",null,"","","","Inactivo","","",null,null,null,null,null,null,"","",null,null,null],
+[6,"BIOMAR","Jefe de Operaciones","",null,"","","","Inactivo","","",null,"2023-09-26","2023-10-10","2023-10-24",null,null,"","",994,null,null],
+[7,"BIOMAR","Analista DO","",null,"","","","Inactivo","","",null,"2023-09-26",null,null,null,null,"","",null,null,null],
+[8,"BODEGAS SAN FRANCISCO","Supervisor Prevención de Riesgos","",null,"","","","Inactivo","","",null,"2023-10-30","2023-11-06","2023-11-20",null,null,"","",967,null,null],
+[9,"CAMANCHACA CULTIVOS SUR","Ingeniero Control Gestion","",null,"","","","Inactivo","","",null,null,null,null,null,null,"","",null,null,null],
+[10,"CAMANCHACA CULTIVOS SUR","Jefe de Mantención","",null,"","","","Inactivo","","",null,null,null,null,null,null,"","",null,null,null],
+[11,"CARGILL","Líder Logística Marítima","",null,"","","","Inactivo","","",null,"2023-12-22","2023-12-28","2024-01-11",null,null,"","",915,null,null],
+[12,"CECINAS LLANQUIHUE","Analista Contable","",null,"","","","Inactivo","","",null,"2023-11-21","2023-11-22","2023-12-06",null,null,"","",951,null,null],
+[13,"CECINAS LLANQUIHUE","Líder de Capacitación y DO","",null,"","","","Inactivo","","",null,"2023-12-20","2023-12-20","2024-01-03",null,null,"","",923,null,null],
+[14,"CECINAS LLANQUIHUE","Técnico en Refrigeración","",null,"","","","Inactivo","","",null,"2023-12-13","2023-12-15","2023-12-29",null,null,"","",928,null,null],
+[15,"CECINAS LLANQUIHUE","Administrativo Contable","",null,"","","","Inactivo","","",null,"2023-11-21","2023-11-22","2023-12-06",null,null,"","",951,null,null],
+[16,"FUNDACIÓN LEGADO CHILE","Director(a) Ejecutivo(a)","",null,"","","","Inactivo","","",null,"2023-11-15","2023-11-17","2023-12-01",null,null,"","",956,null,null],
+[17,"GINO","Ing. Control de Gestión","",null,"","","","Inactivo","","",null,null,"2023-11-10","2023-11-24",null,null,"","",963,null,null],
+[18,"HOTEL TALBOT","Jefe Administración y Control","",null,"","","","Inactivo","","",null,null,null,null,null,null,"","",null,null,null],
+[19,"HOTEL TALBOT","Analista Sr Control de Gestión","",null,"","","","Inactivo","","",null,"2023-10-16","2023-10-16","2023-10-30",null,null,"","",988,null,null],
+[20,"HOTEL TALBOT","Jefe de Ventas","",null,"","","","Inactivo","","",null,"2023-12-07","2023-12-13","2023-12-27",null,null,"","",930,null,null],
+[21,"HOTEL TALBOT","Encargado de Administración","",null,"","","","Inactivo","","",null,null,"2023-11-20","2023-12-04",null,null,"","",953,null,null],
+[22,"MANARE","Asistente Comercial","",null,"","","","Inactivo","","",null,"2023-10-11","2023-10-16","2023-10-30",null,null,"","",988,null,null],
+[23,"LINDE","Jefe de Servicios","",null,"","","","Inactivo","","",null,"2023-10-03","2023-10-05","2023-10-19",null,null,"","",999,null,null],
+[24,"MANUKA","Analista Programador","",null,"","","","Inactivo","","",null,"2023-11-23","2023-11-24","2023-12-08",null,null,"","",949,null,null],
+[25,"MANUKA","Subgerente de Personas","",null,"","","","Inactivo","","",null,"2023-12-04","2023-12-15","2023-12-27",null,null,"","",4580,null,null],
+[26,"MARIA AYUDA","Supervisora Técnica","",null,"","","","Inactivo","","",null,"2023-09-08","2023-09-12","2023-09-26",null,null,"","",1022,null,null],
+[27,"MARIA AYUDA","Directora de Residencia Temuco","",null,"","","","Inactivo","","",null,"2023-10-17","2023-10-19","2023-11-02",null,null,"","",985,null,null],
+[28,"MARÍA AYUDA","Director(a) Residencia Antofagasta","",null,"","","","Inactivo","","",null,"2023-11-30","2023-12-01","2023-12-15",null,null,"","",942,null,null],
+[29,"MAS CONSULTORES","Coordinador de Proyectos","",null,"","","","Inactivo","","",null,"2023-10-18","2023-10-19","2023-11-02",null,null,"","",985,null,null],
+[30,"MULTI X","Subgerente Aseguramiento de Calidad","",null,"","","","Inactivo","","",null,null,"2023-10-16","2023-10-30",null,null,"","",988,null,null],
+[31,"MARÍA AYUDA","Director(a) Residencia San Felipe","",null,"","","","Inactivo","","",null,"2023-12-04","2023-12-05","2023-12-19",null,null,"","",938,null,null],
+[32,"NATPRO","Jefe de Producción","",null,"","","","Inactivo","","",null,"2023-11-02","2023-11-06","2023-11-20",null,null,"","",967,null,null],
+[33,"FRIOSUR","Jefe Calidad","",null,"","","","Inactivo","","",null,"2023-10-18","2023-10-25","2023-11-08",null,null,"","",979,null,null],
+[34,"SALFA SUR","Ejecutivo Comercial Leasing","",null,"","","","Inactivo","","",null,"2023-10-05","2023-10-10","2023-10-24",null,null,"","",994,null,null],
+[35,"SALFA SUR","Jefe Marketing Digital","",null,"","","","Inactivo","","",null,"2023-10-05","2023-10-10","2023-10-24",null,null,"","",994,null,null],
+[36,"PUNTO AUSTRAL","KAM Retail","",null,"","","","Inactivo","","",null,"2023-12-26","2023-12-27","2024-01-10",null,null,"","",916,null,null],
+[37,"SALFA SUR","Gerente NBL","",null,"","","","Inactivo","","",null,"2023-11-29","2023-11-30","2023-12-14",null,null,"","",943,null,null],
+[38,"SALMONEXPERT","Editor","",null,"","","","Inactivo","Suspendido","",null,null,"2023-10-03","2023-10-17",null,null,"","",1001,null,null],
+[39,"SALMONEXPERT","KAM","",null,"","","","Inactivo","","",null,null,"2023-10-03","2023-10-17",null,null,"","",1001,null,null],
+[40,"SEMILLAS LLANQUIHUE","Prevencionista Part Time","",null,"","","","Inactivo","","",null,null,null,null,null,null,"","",null,null,null],
+[41,"SURALIS","Ingeniero Recursos Hidricos","",null,"","","","Inactivo","","",null,null,"2023-10-17","2023-10-31",null,null,"","",987,null,null],
+[42,"SANTA TERESA","Gerente de Proyectos","",null,"","","","Inactivo","Suspendido","",null,null,null,null,null,null,"","",null,null,null],
+[43,"SURALIS","Analista Inteligencia Operacional","",null,"","","","Inactivo","","",null,null,"2023-11-14","2023-11-28",null,null,"","",959,null,null],
+[44,"TECNOFAST","Ejecutivo Comercial Santiago","",null,"","","","Inactivo","","",null,null,"2023-09-05","2023-09-19",null,null,"","",1029,null,null],
+[45,"TECNOFAST","Asesor Comercial PV","",null,"","","","Inactivo","","",null,null,"2023-10-20","2023-11-03",null,null,"","",984,null,null],
+[46,"TECNOFAST","Asesor Comercial Santiago","",null,"","","","Inactivo","Suspendido","",null,null,null,"2023-11-24",null,null,"","",null,null,null],
+[47,"TERRASUR","Líder de Proyectos","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-01-05","2024-01-29","2024-02-12","2024-03-15",null,"","",46,3,2024],
+[48,"MANARE","Jefe(a) de Operaciones","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-01-10","2024-01-11","2024-01-25","2024-02-06",null,"","",26,2,2024],
+[49,"CENTRO DE CAPACITACIÓN LECHERO DEL SUR","Asistente de Capacitación","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-01-10","2024-01-12","2024-01-26","2024-02-26",null,"","",45,2,2024],
+[50,"BIOMAR","Analista Contable","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-01-15","2024-01-15","2024-01-29","2024-03-06",null,"","",51,3,2024],
+[51,"DELL ORTO","Jefe Sucursal","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-01-11","2024-01-17","2024-01-31","2024-03-18",null,"","",61,3,2024],
+[52,"FRASAL","Encargado de Bodega","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-01-18","2024-01-26","2024-02-09","2024-04-01",null,"","",66,4,2024],
+[53,"LINDE","Ejecutivo Comercial Temuco","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-01-19","2024-01-23","2024-02-06","2024-08-26",null,"","",216,8,2024],
+[54,"ABBA HOTELES","Gerente de Hotel","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-01-24","2024-01-24","2024-02-07","2024-03-08",null,"","",44,3,2024],
+[55,"INMUEBLES CATALUNYA","Ejecutivos Comerciales","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-01-25","2024-01-25","2024-02-08","2024-05-24",null,"","",120,5,2024],
+[56,"CECINAS LLANQUIHUE","Técnico Soporte TI","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-01-31","2024-01-31","2024-02-14","2024-03-11",null,"","",40,3,2024],
+[57,"BIOMAR","KAM Senior","Gerente",1,"","","","Inactivo","Cerrado","",null,"2024-02-01","2024-02-13","2024-02-27","2024-05-07",null,"","",84,5,2024],
+[58,"BIOMAR","Supervisor SSO","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-02-16","2024-02-19","2024-03-04","2024-03-08",null,"","",18,3,2024],
+[59,"TALBOT","Jefe de Recepción","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-02-22","2024-02-23","2024-03-08","2024-04-18",null,"","",55,4,2024],
+[60,"BIOMAR","Analista DO","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-02-22","2024-02-27","2024-03-12","2024-05-27",null,"","",90,5,2024],
+[61,"HUIRO REGENERATIVO","Gerente General","Gerente",1,"","","","Inactivo","Cerrado","",null,"2024-02-28","2024-03-08","2024-03-18","2024-07-18",null,"","",132,7,2024],
+[62,"MAS CONSULTORES","Coordinador(a) de Proyectos","",1,"","","","Inactivo","Suspendido","",null,"2024-03-11","2024-03-12","2024-03-22",null,null,"","",840,null,null],
+[63,"CECINAS LLANQUIHUE","Administrativo(a) Contable*","Profesional",1,"","","","Inactivo","Cerrado","SI",null,"2024-03-11","2024-03-11","2024-03-21","2024-04-09",null,"","",29,4,2024],
+[64,"VERDE SUR","Gerente General","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-03-14","2024-03-19","2024-03-29","2024-05-16",null,"","",58,5,2024],
+[65,"SURALIS","Jefe de Contabilidad y Finanzas","",1,"","","","Inactivo","Cerrado","",null,"2024-03-14","2024-03-15","2024-03-25","2024-09-03","2024-10-01","Israel Vera","",172,9,2024],
+[66,"GALILEA","Subgerente de Proyectos Zona Sur","",1,"","","","Inactivo","Suspendido","",null,"2024-03-18","2024-03-25","2024-04-04",null,null,"","",827,null,null],
+[67,"LINDE","Supervisor de Mantenimiento","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-03-21","2024-03-26","2024-04-05","2024-05-29",null,"","",64,5,2024],
+[68,"FRIOSUR","Encargado(a) Operaciones y Logística","",1,"","","","Inactivo","Suspendido","",null,"2024-04-01","2024-04-03","2024-04-13",null,null,"","",818,null,null],
+[69,"TALBOT","Especialista de Control de Gestión Estrategico","",1,"","","","Inactivo","Suspendido","",null,"2024-03-26","2024-03-26","2024-04-05",null,null,"","",826,null,null],
+[70,"MOWI","Técnico en Mantención Aysén","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-03-27","2024-03-27","2024-04-06","2024-06-05",null,"","",70,6,2024],
+[71,"HOGAR DE NIÑAS LAS CRECHES","Directora de Residencia","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-03-21","2024-03-22","2024-04-01","2024-04-12",null,"","",21,4,2024],
+[72,"MOWI","Asistente de de Piscicultura Recirculación","",1,"","","","Inactivo","Suspendido","",null,"2024-04-02","2024-04-10","2024-04-20",null,null,"","",811,null,null],
+[73,"MOWI","Asistente de Reproducción y Genética","",1,"","","","Inactivo","Suspendido","",null,"2024-04-02","2024-04-10","2024-04-20",null,null,"","",811,null,null],
+[74,"SURALIS","Jefe de Mantenimiento","Gerente",1,"BV","GT","","Inactivo","Cerrado","",null,"2024-04-09","2024-04-10","2024-04-20","2024-10-09","2024-11-01","Camilo Dittus","",182,10,2024],
+[75,"TECNOFAST","Ejecutivo Comercial Talca","",1,"","","","Inactivo","Suspendido","",null,"2024-04-04","2024-04-04","2024-04-14",null,null,"","",817,null,null],
+[76,"SUNCHEMICAL","Jefe Técnico de Productos Químicos","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-04-04","2024-04-05","2024-04-15","2024-06-07",null,"","",63,6,2024],
+[77,"MARÍA AYUDA","Director(a) de Residencia Iquique","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-04-05","2024-04-05","2024-04-15","2024-06-05",null,"","",61,6,2024],
+[78,"BIOMAR","Analista Contable Corporativo*","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-04-05","2024-04-05","2024-04-15","2024-06-28",null,"","",84,6,2024],
+[79,"MOWI","Técnico en Mantención Chiloé","",1,"","","","Inactivo","Suspendido","",null,"2024-03-26","2024-04-10","2024-04-20",null,null,"","",811,null,null],
+[80,"CARGILL","Customer Service","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-04-08","2024-04-10","2024-04-20","2024-07-05",null,"","",86,7,2024],
+[81,"TECNOFAST","Ejecutivo Comercial Antofagasta*","",1,"","","","Inactivo","Suspendido","SI",null,"2024-04-12","2024-04-12","2024-04-22",null,null,"","",809,null,null],
+[82,"MANUKA","Subgerente de Personas*","",1,"","","","Inactivo","Suspendido","",null,"2024-04-15","2024-04-15","2024-04-25",null,null,"","",806,null,null],
+[83,"FID SEGUROS","Ejecutivo Comercial","",1,"","","","Inactivo","Suspendido","",null,"2024-04-12","2024-04-16","2024-04-26",null,null,"","",805,null,null],
+[84,"COMACO","Analista Contable","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-04-16","2024-04-16","2024-04-26","2024-07-05",null,"","",80,7,2024],
+[85,"ABBA HOTELES","Gte de Hotel*","Jefatura",1,"","","","Inactivo","Cerrado","SI",null,"2024-04-18","2024-04-18","2024-04-28","2024-06-03",null,"","",46,6,2024],
+[86,"BIOFILTRO","KAM Ventas Técnicas","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-04-23","2024-04-25","2024-05-05","2024-07-18",null,"","",84,7,2024],
+[87,"SURALIS","Subgerente TI","",1,"","","","Inactivo","Suspendido","",null,"2024-04-24","2024-04-25","2024-05-05",null,null,"","",796,null,null],
+[88,"ARRATIA","Encargado(a) de Marketing*","Jefatura",1,"","","","Inactivo","Cerrado","SI",null,"2024-04-23","2024-04-25","2024-05-05","2024-06-12",null,"","",48,6,2024],
+[89,"TALBOT","Ejecutivo(a) de Ventas / KAM","Jefatura",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2024-04-19","2024-04-23","2024-05-03","2025-04-25","2025-05-12","Constanza Roa","",367,4,2025],
+[90,"WENCO","Kam Agrícola","",1,"","","","Inactivo","Suspendido","",null,null,null,"2024-05-13",null,null,"","",null,null,null],
+[91,"FRIOSUR","Jefe de Mejora Continua","Gerente",1,"GT","","MJC","Inactivo","Suspendido","NO",null,null,"2025-01-28","2024-05-17",null,null,"","",518,null,null],
+[92,"PERSPECCIÓN","Consultor Junior","Profesional",1,"","","","Inactivo","Cerrado","",null,null,"2024-06-11","2024-05-24","2024-08-08",null,"","",58,8,2024],
+[93,"TALBOT","Jefe Técnico de Mantenimiento Corporativo","Jefatura",1,"ML","BV","","Inactivo","Cerrado","NO",null,"2024-05-09","2024-05-10","2024-05-24","2025-03-14","2025-03-31","Alejandro Ramirez","",308,3,2025],
+[94,"CECINAS LLANQUIHUE","Electromecánico","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-05-27","2024-05-23","2024-06-06","2024-06-18",null,"","",26,6,2024],
+[95,"QLF LABS","Ejecutivo(a) Comercial Puerto Montt","Profesional",1,"BV","","","Inactivo","Suspendido","NO",null,"2024-05-17","2024-06-03","2024-06-17",null,null,"","",757,null,null],
+[96,"BAKER","Jefe de Contabilidad","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-06-07","2024-06-11","2024-06-25","2024-07-23",null,"","",42,7,2024],
+[97,"DERCORP","Jefe de Proyectos","",1,"","","","Inactivo","Suspendido","",null,null,"2024-06-25","2024-07-09",null,null,"","",735,null,null],
+[98,"DERCORP","Cuidador Complejo Turístico","Profesional",1,"","","","Inactivo","Cerrado","",null,null,"2024-06-18","2024-07-02","2024-09-11",null,"","",85,9,2024],
+[99,"CECINAS LLANQUIHUE","Analista de Remuneraciones","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-06-17","2024-06-18","2024-07-02","2024-07-18",null,"","",30,7,2024],
+[100,"PROCARNE","Ejecutivo de Ventas","",1,"","","","Inactivo","Suspendido","",null,null,"2024-06-24","2024-07-08",null,null,"","",736,null,null],
+[101,"MARIENBERG","KAM Acuícola","Jefatura",1,"","","","Inactivo","Cerrado","",null,null,"2024-07-01","2024-07-15","2024-08-08",null,"","",38,8,2024],
+[102,"IMAHE","Vendedor","Profesional",1,"","","","Inactivo","Cerrado","",null,null,"2024-07-08","2024-07-22","2024-09-09",null,"","",63,9,2024],
+[103,"BIOMASA SW","Vendedor de terreno agrícola","Profesional",1,"ML","","CSC","Inactivo","Cerrado","",null,null,"2024-07-10","2024-07-24","2024-10-23",null,"","",105,10,2024],
+[104,"IMAHE","Jefe de Sucursal","Jefatura",1,"","","","Inactivo","Cerrado","",null,null,"2024-07-08","2024-07-22","2024-09-06",null,"","",60,9,2024],
+[105,"RIA AUSTRAL","Jefe de Aseguramiento de Calidad","Jefatura",1,"","","","Inactivo","Cerrado","",null,"2024-07-10","2024-07-15","2024-07-29","2024-08-12",null,"","",28,8,2024],
+[106,"FRIOSUR","Coordinador de Logística","Jefatura",1,"","","","Inactivo","Cerrado","",null,null,"2024-07-17","2024-07-31","2024-09-10",null,"","",55,9,2024],
+[107,"SUNQUIMICAL","Analista de Adquisiciones","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-07-18","2024-07-22","2024-08-05","2024-08-23",null,"","",32,8,2024],
+[108,"TERRASUR","Jefe de Terreno","Jefatura",1,"","","","Inactivo","Cerrado","",null,null,"2024-07-22","2024-08-05","2024-08-24",null,"","",33,8,2024],
+[109,"TERRASUR","Jefe de Oficina Técnica","Jefatura",1,"","","","Inactivo","Cerrado","",null,null,"2024-07-22","2024-08-05","2024-09-30",null,"","",70,9,2024],
+[110,"TALBOT","Jefe de Mantenimiento Aeropuerto","Gerente",1,"BV","","CdV","Inactivo","Cerrado","",null,"2024-05-23","2024-05-24","2024-06-07","2024-11-08",null,"","",168,11,2024],
+[111,"QLF LABS","Ejecutivo Comercial Santiago","Profesional",1,"","","","Inactivo","Cerrado","",null,null,"2024-07-22","2024-08-05","2024-09-09",null,"","",49,9,2024],
+[112,"QLF LABS","Ejecutivo Comercial Concepción","Profesional",1,"BV","","","Inactivo","Suspendido","NO",null,null,"2024-07-22","2024-08-05",null,null,"","",708,null,null],
+[113,"MULTI X","Sales Manager Valor Agregado","Jefatura",1,"GT","ML","CdV","Inactivo","Cerrado","",null,null,"2024-07-26","2024-08-09","2024-10-15",null,"","",81,10,2024],
+[114,"HYATT","Ejecutiva de Ventas","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-07-26","2024-08-01","2024-08-15","2024-09-25",null,"","",55,9,2024],
+[115,"FRIOSUR","Administrativo(a) de Gerencia General","Profesional",1,"GT","","MJC","Inactivo","Cerrado","NO",null,"2024-07-12","2024-07-15","2024-07-29","2025-02-17",null,"","",217,2,2025],
+[116,"BIOMAR","Encargada Atención al Cliente","Profesional",1,"","","","Inactivo","Cerrado","",null,"2024-07-31","2024-08-01","2024-08-15","2024-09-25",null,"","",55,9,2024],
+[117,"MANARE","KAM Mayorista/Distribuidor","Jefatura",1,"RA","GT","","Inactivo","Cerrado","NO",null,null,"2024-08-05","2024-08-19","2024-12-03",null,"","",120,12,2024],
+[118,"BIOMAR","Supervisor(a) Mecánico","Profesional",1,"BV","","MJC","Inactivo","Cerrado","",null,null,"2024-08-02","2024-08-16","2024-10-10",null,"","",69,10,2024],
+[119,"TECNOFAST","Ejecutivo Comercial Terreno Calama","Profesional",1,"RA","","MJC","Inactivo","Suspendido","NO",null,null,"2024-08-13","2024-08-27",null,null,"","",686,null,null],
+[120,"TECNOFAST","Ejecutivo comercial Iquique","Profesional",1,"RA","","CSC","Inactivo","Cerrado","",null,null,"2024-08-13","2024-08-27","2024-10-30",null,"","",78,10,2024],
+[121,"SUN CHEMICAL","Encargado(a) de Mantención","Profesional",1,"","","","Inactivo","Cerrado","",null,null,"2024-08-14","2024-08-28","2024-09-25",null,"","",42,9,2024],
+[122,"LINDE","Técnico Mecánico","Profesional",1,"BV","","","Inactivo","Cerrado","",null,"2024-08-22","2024-08-23","2024-09-06","2024-10-28",null,"","",66,10,2024],
+[123,"LINDE","Prevencionista de Riesgo","Profesional",1,"BV","","CSC","Inactivo","Suspendido","NO",null,"2024-08-22","2024-08-23","2024-09-06",null,null,"","",676,null,null],
+[124,"BAKER","Asistente Contable","Profesional",1,"BV","","MJC","Inactivo","Cerrado","",null,"2024-08-23","2024-08-26","2024-09-09","2024-10-08",null,"","",43,10,2024],
+[125,"AQUACHILE","Lider de reclutamiento y selección","Jefatura",1,"ML","","CSC","Inactivo","Cerrado","NO",null,"2024-09-05","2024-09-10","2024-09-24","2024-12-06",null,"","",87,12,2024],
+[126,"MAS CONSULTORES","Coordinador de Proyectos RRHH","Profesional",1,"RA","","","Inactivo","Cerrado","NO",null,null,"2024-09-09","2024-09-19","2025-01-29",null,"","",142,1,2025],
+[127,"SALFA SUR","Gerente de Negocios Neumáticos","Profesional",1,"ML","GT","CdV","Inactivo","Suspendido","",null,null,"2024-09-09","2024-09-23",null,null,"","",659,null,null],
+[128,"FUNERARIA HOGAR DE CRISTO","Subgerente Comercial / Jefe de Ventas","Gerente",1,"BV","GT","MJC","Inactivo","Cerrado","NO",null,null,"2024-09-09","2024-09-23","2024-12-04",null,"","",86,12,2024],
+[129,"VERDE SUR","Encargado de Operaciones","Profesional",1,"BV","","CdV","Inactivo","Cerrado","",null,null,"2024-09-09","2024-09-23","2024-10-11",null,"","",32,10,2024],
+[130,"DELLORTO","KAM Digital","Jefatura",1,"RA","","CSC","Inactivo","Cerrado","NO",null,null,"2024-09-13","2024-09-27","2025-03-07","2025-04-01","Luis Santibañez","",175,3,2025],
+[131,"RAFULCO","Gerente General","Gerente",1,"ML","","CdV","Inactivo","Cerrado","",null,null,"2024-09-13","2024-09-27","2024-10-28",null,"","",45,10,2024],
+[132,"RAFULCO","Analista Control de Gestión","Profesional",1,"RA","","","Inactivo","Suspendido","",null,null,"2024-09-27","2024-10-11",null,null,"","",641,null,null],
+[133,"HUIRO REGENERATIVO","Asistente Territorial","Profesional",1,"ML","","MJC","Inactivo","Cerrado","",null,null,"2024-09-25","2024-10-09","2024-12-04",null,"","",70,12,2024],
+[134,"TALBOT","Analista Contable Corporativo","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,null,"2024-10-01","2024-10-15","2025-04-16","2025-04-28","Leonel Quezada","",197,4,2025],
+[135,"EBMETRICS","Sales Executive","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,null,"2024-10-15","2024-10-29","2024-12-24",null,"","",70,12,2024],
+[136,"CECINAS LLANQUIHUE","Vendedor en Terreno Aysén","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,"2024-10-08","2024-10-09","2024-10-23","2024-12-06",null,"","",58,12,2024],
+[137,"CECINAS LLANQUIHUE","Coordinador Aseguramiento de Calidad","Profesional",1,"RA","","CSC","Inactivo","Suspendido","NO",null,"2024-10-08","2024-10-14","2024-10-28",null,null,"","",624,null,null],
+[138,"MANUKA","Jefe Reclutamiento e Inclusión Laboral","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2024-10-09","2024-10-10","2024-10-24","2024-11-22",null,"","",43,11,2024],
+[139,"MANARE","Encargado(a) de Calidad y Desarrollo Productos","Jefatura",1,"ML","","MJC","Inactivo","Cerrado","NO",null,"2024-10-08","2024-10-09","2024-10-23","2024-11-26",null,"","",48,11,2024],
+[140,"TECNOFAST","Ejecutivo(a) Comercial Concepción","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,null,"2024-10-10","2024-10-24","2024-12-20",null,"","",71,12,2024],
+[141,"REWILDING","Director de Comunicaciones","Jefatura",1,"ML","","CSC","Inactivo","Suspendido","NO",null,"2024-10-10","2025-03-01","2025-03-14",null,null,"","Llamar Agnes para agradecer, cliente quiere más adelante si se viene a pv.",486,null,null],
+[142,"RIA AUSTRAL","Prevencionista de Riesgo","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2024-10-21","2024-10-23","2024-11-06","2025-01-02",null,"","",71,1,2025],
+[143,"BAKER","Jefe de Finanzas y Adm.","Jefatura",1,"GT","","MJC","Inactivo","Cerrado","NO",null,null,"2024-11-04","2024-11-18","2025-01-08",null,"","",65,1,2025],
+[144,"TALBOT","Jefe de Propiedad /Housekeeper Aeropuerto","Jefatura",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2024-10-24","2024-10-28","2024-11-11","2025-03-19","2025-04-07","Andrea Escalante","",142,3,2025],
+[145,"MULTI X","Export Manager (2a posición)","Jefatura",1,"ML","GT","CdV","Inactivo","Suspendido","NO",null,null,null,null,null,null,"","",null,null,null],
+[146,"TALBOT","Jefe de Propiedad /Housekeeper Iquique","Profesional",1,"ML","","CdV","Inactivo","Suspendido","NO",null,null,"2024-10-29","2024-11-12",null,null,"","",609,null,null],
+[147,"SF TRANS","Ing en Presupuesto y control de costos","Jefatura",1,"BV","","CdV","Inactivo","Cerrado","NO",null,null,"2024-11-04","2024-11-18","2025-01-02",null,"","",59,1,2025],
+[148,"ALDEA CRSH","Psicologa","Profesional",1,"ML","","CSC","Inactivo","Cerrado","NO",null,"2024-08-26","2024-11-04","2024-11-18","2024-12-18",null,"","",44,12,2024],
+[149,"ALDEA CRSH","Asistente Social","Profesional",1,"ML","","CSC","Inactivo","Cerrado","SI",null,"2024-08-27","2024-11-04","2024-11-18","2025-02-05",null,"","",93,2,2025],
+[150,"MULTI X","Subgerente de Produccion Agua Mar","Jefatura",1,"ML","GT","MJC","Inactivo","Suspendido","NO",null,null,"2024-11-04","2024-11-18",null,null,"","clienta ya no lo considera. Detener.",603,null,null],
+[151,"MULTI X","Jefe de planificacion y control de gestión de Farming","Jefatura",1,"ML","GT","MJC","Inactivo","Suspendido","NO",null,null,"2024-11-04","2024-11-18",null,null,"","",603,null,null],
+[152,"ELECMETAL","Jefe de Finanzas Corporativo","Gerente",1,"BV","GT","","Inactivo","Cerrado","NO",null,null,"2024-06-15",null,"2025-01-13",null,"","",212,1,2025],
+[153,"ALDEA CRSH","Director de Residencia","Jefatura",1,"ML","","CSC","Inactivo","Cerrado","NO",null,"2024-11-07","2024-11-13","2024-11-27","2025-03-27","2025-04-07","Joshua Rossel","",134,3,2025],
+[154,"QLF LABS","Ejecutivo Comercial Santiago","Profesional",1,"BV","","","Inactivo","Suspendido","SI",null,null,"2024-07-22","2024-08-05",null,null,"","",708,null,null],
+[155,"TERRASUR","Subgerente de Administración y Finanzas","Gerente",1,"GT","","CSC","Inactivo","Cerrado","NO",null,"2024-11-20","2024-12-09","2024-12-23","2025-02-25","2025-03-25","Daniela Rivera","",78,2,2025],
+[156,"MERITENS","Ingeniero Postventa","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2024-11-14","2024-11-21","2024-12-05","2024-12-23",null,"","",32,12,2024],
+[157,"ANGELMO FOODS","Encargado(a) de Importaciones","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2024-11-11","2024-11-13","2024-11-27","2025-01-17",null,"","",65,1,2025],
+[158,"MAQSUR","Prevencionista de Riesgo","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2024-11-15","2024-11-15","2024-11-29","2024-11-26",null,"","",11,11,2024],
+[159,"HOGAR MISIÓN DE MARÍA","Educadora de Párvulos","Profesional",1,"ML","","CSC","Inactivo","Cerrado","SI",null,null,"2024-11-14","2024-11-28","2024-12-23",null,"","",39,12,2024],
+[160,"BIOFILTRO","Jefe Operaciones Remota","Jefatura",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2024-11-18","2024-12-06","2024-12-20","2025-03-28","2025-05-02","Marcelo  Mannett","",112,3,2025],
+[161,"BIOFILTRO","Subgerente Finanzas y Control de Gestión","Jefatura",1,"GT","","MJC","Inactivo","Suspendido","NO",null,"2024-11-18","2024-12-04","2024-12-18",null,null,"","",573,null,null],
+[162,"REMAP","Encargado de Planta","Jefatura",1,"RA","","CSC","Inactivo","Cerrado","NO",null,"2024-11-19","2024-11-27","2024-12-11","2025-01-27",null,"","",61,1,2025],
+[163,"REMAP","Asistente Operaciones Planta","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,"2024-11-19","2024-11-27","2024-12-11","2025-01-24",null,"","",58,1,2025],
+[164,"CECINAS LLANQUIHUE","Tecnico en Refrigeración","Profesional",1,"BV","","MJC","Inactivo","Suspendido","NO",null,"2024-11-27","2024-11-27","2024-12-11",null,null,"","",580,null,null],
+[165,"CLUB INNOVACIÓN ACUICOLA","Subdirector","Jefatura",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2024-11-21","2024-12-11","2024-12-25","2025-02-25","2025-03-15","Catalina Jimenez","",76,2,2025],
+[166,"MULTI X","Analista de Optimización","Jefatura",1,"GT","","MJC","Inactivo","Cerrado","NO",null,"2024-11-26","2024-11-27","2024-12-11","2025-02-14",null,"","",79,2,2025],
+[168,"TALBOT","Analista de Cobranza","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2024-12-02","2024-12-03","2024-12-17","2025-01-16",null,"","",44,1,2025],
+[169,"RIO FUTURO","Subgerente de Operaciones","Gerente",1,"ML","GT","CSC","Inactivo","Cerrado","NO",null,"2024-12-05","2024-12-10","2024-12-24","2025-03-11","2025-04-01","Jorge Romani","",91,3,2025],
+[170,"BAKER","Jefe Post Venta","Jefatura",1,"GT","","MJC","Inactivo","Cerrado","NO",null,"2024-12-09","2024-12-10","2024-12-24","2025-02-20",null,"","",72,2,2025],
+[171,"M SERVICE","Subgerente de Adm y Finanzas (sin hunting)","Jefatura",1,"GT","","CSC","Inactivo","Cerrado","NO",null,"2024-12-06","2024-12-11","2024-12-25","2025-01-10",null,"","",30,1,2025],
+[176,"TELBROS","Jefe Operaciones","Profesional",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2024-12-04","2024-12-06","2024-12-20","2025-03-20",null,"","",104,3,2025],
+[177,"NUECES DEL SUR","Encargado de Productores","Jefatura",1,"ML","","CdV","Inactivo","Cerrado","NO",null,null,"2024-12-11","2024-12-25","2025-02-04",null,"","",55,2,2025],
+[178,"FRIOSUR","Administrativo Comex","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2024-12-06","2024-12-10","2024-12-24","2025-02-07",null,"","",59,2,2025],
+[179,"TECNOFAST","Asesor Home Puerto Varas","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,null,"2024-12-23","2025-01-06","2025-02-10",null,"","",49,2,2025],
+[180,"SF TRANS","Planner Logístico","Jefatura",1,"BV","","MJC","Inactivo","Cerrado","NO",null,null,"2024-12-17","2024-12-31","2025-01-02",null,"","",16,1,2025],
+[181,"BAKER","Analista de Planificación y Control","Profesional",1,"GT","","CSC","Inactivo","Cerrado","NO",null,null,"2024-12-23","2025-01-06","2025-02-24","2025-02-25","Josefina Zamora","",63,2,2025],
+[182,"VERDE SUR","Ejecutivo Comercial","Profesional",1,"ML","","CdV","Inactivo","Suspendido","NO",null,null,null,null,null,null,"","",null,null,null],
+[183,"EMPACK","Business Development Manager","Gerente",1,"GT","","CSC","Inactivo","Cerrado","NO",null,null,"2024-12-27","2025-01-15","2025-03-05","2025-03-24","Pablo Contreras","",68,3,2025],
+[184,"EMPACK","Account Manager","Profesional",1,"BV","","MJC","Inactivo","Suspendido","NO",null,null,"2024-12-27","2025-01-10",null,null,"","",550,null,null],
+[185,"RIA AUSTRAL","Jefe de Planta","Jefatura",1,"BV","","MJC","Inactivo","Suspendido","NO",null,null,"2024-12-27","2025-01-14",null,null,"","",550,null,null],
+[186,"TALBOT","Jefe de Recepción","Jefatura",1,"ML","","CdV","Inactivo","Cerrado","NO",null,null,"2025-01-06","2025-01-20","2025-05-20","2025-06-16","Pablo Moreira","",134,5,2025],
+[187,"SIGRO","Profesional de Terreno Valdivia","Jefatura",1,"RA","","CSC","Inactivo","Cerrado","NO",null,null,"2025-01-07","2025-01-21","2025-02-05",null,"","",29,2,2025],
+[188,"SOLVENTUM","Representante de Ventas","Jefatura",1,"RA","","CdV","Inactivo","Cerrado","NO",null,null,"2025-01-23","2025-02-06","2025-06-04","2025-06-23","Betsy Gallardo","Betzy ya firmo C.O. Esperando confirmación cliente.",132,6,2025],
+[189,"RIA AUSTRAL","2° posición -Prevencionista de Riesgo","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2024-10-21","2025-01-03","2025-01-04","2025-02-14",null,"","",42,2,2025],
+[190,"TRACKTEC","Business Controller","Jefatura",1,"GT","","CSC","Inactivo","Cerrado","NO",null,null,"2025-01-17","2025-01-31","2025-02-04","2025-03-03","Jan Armstrong","",18,2,2025],
+[191,"BAKER","Analista Contable","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,null,"2025-01-13","2025-01-27","2025-02-19","2025-03-03","Billy Chandia","",37,2,2025],
+[192,"HELADOS PUDU","Ingeniero Control de Gestion","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,null,"2025-01-21","2025-02-04","2025-03-12","2025-03-17","Jonatan Marchant","",50,3,2025],
+[193,"BIOMAR","Ejecutiva de Atención a Clientes *","Profesional",1,"RA","","CdV","Inactivo","Cerrado","SI",null,"2024-10-17","2025-01-20","2025-02-05","2025-02-24","2025-03-10","Fernanda Quintana","",35,2,2025],
+[194,"MULTISEA","Gerente General (Gte operaciones)","Gerente",1,"GT","ML","MJC","Inactivo","Cerrado","NO",null,null,"2025-02-06","2025-02-20","2025-10-23","2025-12-01","Bernardita Baeza","Evaluando mover fecha de ingreso, por bono en empresa actual.",259,10,2025],
+[195,"MAQSUR","Prevencionista*","Profesional",1,"GT","","CSC","Inactivo","Suspendido","SI",null,"2025-01-20","2025-01-20","2025-02-03",null,null,"","",526,null,null],
+[196,"BIOMAR","Ingeniero de confiabilidad en mantención","Gerente",1,"BV","GT","CSC","Inactivo","Cerrado","NO",null,"2025-01-24","2025-01-28","2025-02-11","2025-05-15","2025-06-09","Carlos Gomez","",107,5,2025],
+[197,"HORMIBAL","Vendedor Tecnico","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-01-28","2025-01-30","2025-02-13","2025-06-30","2025-06-30","Cristian Subiabre","Entre por gestión del cliente, no había avisado",151,6,2025],
+[199,"CITECMA","Jefe de Adm y Finanzas","Jefatura",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-02-11","2025-02-18","2025-03-04","2025-07-10","2025-07-28","Christian Farfan","Insistir CO a Hernán (GG), 3° vez",142,7,2025],
+[200,"DANICH","KAM Santiago","Jefatura",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-02-17","2025-02-19","2025-03-05","2025-04-08","2025-04-21","Damian Nuñez","",48,4,2025],
+[201,"DANICH","KAM Puerto Montt","Jefatura",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-02-17","2025-02-19","2025-03-05","2025-06-10","2025-07-01","José MIguel Saez","esperando feedback entrevistas.",111,6,2025],
+[203,"FRIOSUR","Jefe Casino","Jefatura",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2025-03-04","2025-03-04","2025-03-18","2025-10-24","2025-11-17","Karla Cuadra","Karla y Cristian en terna, inistiendo referencias para avanzar Patricia.",234,10,2025],
+[204,"EMBIO","Director Ejecutivo - (Probono)","Jefatura",1,"GT","","MJC","Inactivo","Cerrado","NO",null,null,"2025-03-03","2025-03-17","2025-05-27","2025-07-01","Janet Torres","",85,5,2025],
+[205,"D&C","Gerente de Negocio","Gerente",1,"GT","ML","MJC","Inactivo","Suspendido","NO",null,"2025-02-19","2025-02-26","2025-03-12",null,null,"","",489,null,null],
+[206,"MULTISEA","Analista Control de Gestion","Jefatura",1,"BV","GT","MJC","Inactivo","Suspendido","NO",null,"2025-02-21","2025-02-25","2025-03-11",null,null,"","FABIOLA PIDE SUSPENDERLO HASTA AGOSTO. REVISAR GLO, SEGUNDA VEZ QUE PAUSAN, HUBO YA CARTAOFERTA",490,null,null],
+[207,"NAVIMAG","Gerente de Pasajeros","Gerente",1,"ML","BV","CSC","Inactivo","Cerrado","NO",null,"2025-03-13","2025-03-18","2025-04-01","2025-05-09","2025-05-19","María Angélica Yunge","",52,5,2025],
+[209,"PROCARNE","Jefe de Gestión de Personas","Jefatura",1,"BV","","CSC","Inactivo","Suspendido","NO",null,"2025-03-05","2025-03-11","2025-03-25",null,null,"","08.07 Cecilia aparece por wsp.",476,null,null],
+[210,"RIA AUSTRAL","Supervisor de Mantenimiento x 2","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,null,"2025-03-20","2025-04-03","2025-04-29","2025-05-05","Marcos Obando / Gastón Ruiz","",40,4,2025],
+[211,"WENCO","KAM Agrícola","Jefatura",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2025-03-04","2025-03-20","2025-04-03","2025-07-15","2025-07-18","Rafael del Pozo","Acepta CO 15-07 en la noche",117,7,2025],
+[212,"GINO","Analista Comercial Marketplace","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,null,"2025-03-10","2025-03-24","2025-06-02","2025-06-03","Juan Escandar","Esperando agenda GG",84,6,2025],
+[213,"HORMIBAL","Gerente de Operaciones","Gerente",1,"ML","","CSC","Inactivo","Suspendido","NO",null,"2025-03-11","2025-03-14","2025-03-28",null,null,"","",473,null,null],
+[214,"ESMAX","Encargado de Proyectos Minería","Jefatura",1,"ML","GT","CSC","Inactivo","Suspendido","",null,null,null,null,null,null,"","",null,null,null],
+[215,"MERITENS","Ingeniero de Post Venta","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2025-03-05","2025-03-10","2025-03-24","2025-07-04","2025-07-15","Pablo Lizama","07.07 se envia CO firmada de Pablo Lizama.",116,7,2025],
+[216,"MANARE","Desarrollador de Nuevos Productos *","Jefatura",1,"ML","","MJC","Inactivo","Cerrado","SI",null,null,"2025-03-10","2025-03-24","2025-04-11","2025-04-21","Javiera Yañez","",32,4,2025],
+[217,"GINO","Analista Comercial Marketplace","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,null,"2025-03-10","2025-03-24","2025-07-24","2025-08-11","Mariana Mejia","Esperando agenda GG",136,7,2025],
+[218,"MULTI X","Jefe de Área","Jefatura",1,"GT","","MJC","Inactivo","Suspendido","NO",null,null,"2025-03-18","2025-04-01",null,null,"","3 con informe, esperando feedback tras entrevista con cliente.",469,null,null],
+[219,"MAQSUR","Jefe Comunicaciones Part- time","Profesional",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2025-03-12","2025-03-19","2025-04-02","2025-06-30","2025-07-21","Alejandra Yermany","Seguimiento firma CO a candidata",103,6,2025],
+[220,"TECNOFAST","Asesor Home Santiago","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-03-13","2025-03-14","2025-03-28","2025-10-22","2025-11-03","Ignacio Costa","co la tiene tecnofast, falta que nos compartan para fecha de ingreso",222,10,2025],
+[221,"M SERVICE","Analista Contable - RRHH","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-03-12","2025-03-12","2025-03-26","2025-04-16","2025-04-21","Grace Vargas","",35,4,2025],
+[222,"BRUNO FRITSCH","Gerente de Marca (publicación, Hunting, 1° contacto)","Jefatura",1,"GT","","","Inactivo","Suspendido","NO",null,null,"2025-03-19","2025-04-02",null,null,"","",468,null,null],
+[223,"FRIOSUR","Jefe Abastecimiento","Jefatura",1,"BV","","CdV","Inactivo","Cerrado","NO",null,null,"2025-03-27","2025-04-10","2025-05-22","2025-06-02","Oscar Vargas","",56,5,2025],
+[224,"CECINAS LLANQUIHUE","Técnico Eléctrico","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,"2025-03-24","2025-03-26","2025-04-09","2025-06-02","2025-06-02","Rubén Christie","",68,6,2025],
+[225,"SURALIS","Jefe de Área Procesos Aguas Servidas","Jefatura",1,"RA","","MJC","Inactivo","Suspendido","NO",null,"2025-03-26","2025-03-28","2025-04-11","2025-07-15",null,"","Cliente cerro por su cuenta.",109,7,2025],
+[226,"VERDE SUR","Ejecutivo Comercial","Profesional",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2025-04-07","2025-04-09","2025-04-23","2025-05-20","2025-06-02","Josefina Forteza","",41,5,2025],
+[227,"MANUKA","Analista Control de Gestion","Profesional",1,"ML","","MJC","Inactivo","Cerrado","NO",null,"2025-04-09","2025-04-15","2025-04-29","2025-05-26","2025-06-03","Patricio Millán","Cerrado",41,5,2025],
+[228,"BAKER","Analista contable *","Profesional",1,"BV","","MJC","Inactivo","Cerrado","SI",null,"2025-04-08","2025-04-08","2025-04-22","2025-04-23","2025-04-28","Roxana Campos","",15,4,2025],
+[229,"MULTI X","Sales Manager","Jefatura",1,"GT","","CdV","Inactivo","Cerrado","NO",null,"2025-04-09","2025-04-11","2025-04-25","2025-06-05","2025-07-07","Agustín Vidal","En terna., Anita entrevisto a los 2, debe definirn a quien oferta.",55,6,2025],
+[230,"TASIK - OXZYSUR","SubGerente de Administracion y Finanzas","Gerente",1,"GT","ML","MJC","Inactivo","Suspendido","NO",null,"2025-04-25","2025-04-30","2025-05-14",null,null,"","el cliente esta viendo el cierre con la candidata directamente. (no tenemos ok de cierre aún)",426,null,null],
+[231,"BIOMAR","Ingeniero de Procesos","Profesional",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2025-04-22","2025-04-28","2025-05-12","2025-06-18","2025-06-29","Romina Mendez","Cerraron con Romina Méndez!!! Felicitaron por los buenos candidatos.",51,6,2025],
+[232,"OXXEAN","Jefe Mantenimiento","Jefatura",1,"RA","","MJC","Inactivo","Cerrado","NO",null,null,"2025-04-16","2025-04-30","2025-07-03","2025-07-21","Gustavo Hafemann","Esperando disponibilidad de ingreso para hacer carta oferta",78,7,2025],
+[233,"BIOMAR","Enc. Subcontratación","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2025-04-16","2025-04-17","2025-05-01","2025-05-14","2025-05-26","Rodrigo Barría","",27,5,2025],
+[234,"D&C","Gerente Frigorifico Punta Arenas","Gerente",1,"GT","","MJC","Inactivo","Cerrado","NO",null,"2025-04-22","2025-04-22","2025-05-06","2025-07-10","2025-08-11","Barbara Donoso","",79,7,2025],
+[235,"TECNOFAST","Ejecutivo Comercial Iquique","Profesional",2,"ML","","CC","Activo","Medio","NO",null,null,"2026-01-02","2026-01-16",null,null,"","Se pidió feedback de porque se bajaron a los candidatos enviados. Se están buscando nuevos.",179,null,null],
+[236,"FIORDO AUSTRAL","Jefe Remuneraciones y Compensaciones","Jefatura",1,"ML","","MJC","Inactivo","Suspendido","NO",null,null,null,null,null,null,"","",null,null,null],
+[237,"ALDEA CRSH","Director**","Jefatura",1,"BV","","CSC","Inactivo","Suspendido","SI",null,null,null,null,null,null,"","",null,null,null],
+[238,"EMPACK","Business Development Manager**","Jefatura",1,"GT","","CSC","Inactivo","Cerrado","SI",null,null,"2025-05-05","2025-05-19","2025-06-18","2025-07-15","Katherine Kaiser","Nico Vidal decide cerrar con Katherine, le enviarán CO. Hacer seguimiento.",44,6,2025],
+[239,"SUDMARIS","Jefe Comex","Jefatura",1,"BV","","CSC","Inactivo","Suspendido","NO",null,null,null,null,null,null,"","",null,null,null],
+[240,"SURALIS","Jefatura de Eficiencia de AP.","Jefatura",1,"RA","","MJC","Inactivo","Cerrado","NO",null,"2025-05-12","2025-05-13","2025-05-27","2025-06-23","2025-06-30","Mirko Mutis","cerrado candidato interno que fue parte del proceso.",41,6,2025],
+[241,"RÍA AUSTRAL","Encargado de operaciones","Jefatura",1,"BV","","CSC","Inactivo","Suspendido","NO",null,"2025-05-08","2025-05-09","2025-05-23",null,null,"","Cliente sigue sin responder, ya se le pregunto por suspender, no contesta. Mandar mail indicando que se suspende.",417,null,null],
+[242,"MANARE","Especialista en Desarrollo de Nuevos Productos y Calidad*","Jefatura",1,"ML","","MJC","Inactivo","Cerrado","SI",null,null,"2025-04-28","2025-05-12","2025-06-04","2025-06-16","Mackarena Gonzalez","Cerrado.",37,6,2025],
+[243,"BIOMAR","Analista Control de Gestión","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-05-07","2025-05-08","2025-05-22","2025-07-09","2025-08-04","José Ignacio Espinoza","09.07 se envia carta oferta.",62,7,2025],
+[244,"FRIOSUR","Ingeniero de Logistica - Concepción","Profesional",1,"RA","","MJC","Inactivo","Cerrado","NO",null,null,"2025-05-08","2025-05-22","2025-07-02","2025-07-02","Loretto Mora","Seguimiento ingreso selecionado.",55,7,2025],
+[245,"PHAROS","Analista Contable & RRHH","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2025-05-13","2025-05-15","2025-05-29","2025-06-24","2025-07-01","Jessica Diaz","Firma c.o 25.06",40,6,2025],
+[246,"BADINOTTI","Jefe de Redes","Jefatura",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2025-05-15","2025-05-19","2025-06-02","2025-07-08","2025-07-14","Mauricio Aguilar","Esperando CO",50,7,2025],
+[247,"TECNOFAST","Supervisor de Bodega","Profesional",1,"ML","","CSC","Inactivo","Suspendido","NO",null,null,"2025-05-09","2025-05-23",null,null,"","Hay un informe de finalista. Cliente no contesta, Mona insistirá el 04.06 por 3° vez. Tb hay nuevos presentados.",417,null,null],
+[248,"ALDEA","Director residencia **","Gerente",1,"ML","","CSC","Inactivo","Cerrado","SI",null,"2025-05-20","2025-05-20","2025-06-03","2025-09-17","2025-10-20","Catalina Manriquez","Finalista en entrevista con el Cura",120,9,2025],
+[249,"RIO ALVÁREZ - GRUPO TASIK","Jefe Mantención","Jefatura",1,"BV","","CSC","Inactivo","Suspendido","NO",null,"2025-05-21",null,null,null,null,"","",null,null,null],
+[250,"OXZO","Jefe de ventas - Puerto Montt","Jefatura",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2025-05-23","2025-05-27","2025-06-10","2025-08-26","2025-09-01","Miguel Rosenthal","Cerrar. Candidato interno (ascenso)",91,8,2025],
+[251,"TURISMO COMAPA","Gerente de Ventas","Gerente",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2025-06-02","2025-06-04","2025-06-18","2025-07-31","2025-08-12","Felipe Tapia","Cliente debe determinar. 2 finalistas.",57,7,2025],
+[252,"TERRASUR","Jefe de Terreno","Jefatura",1,"RA","","MJC","Inactivo","Cerrado","NO",null,"2025-04-17","2025-06-06","2025-06-20","2025-07-18","2025-07-21","Raul Meline","Ev. psicolaboral de finalistas.",42,7,2025],
+[253,"CASCADA TRAVEL","Jefe Control de Gestión","Jefatura",1,"ML","","MJC","Inactivo","Cerrado","NO",null,"2025-06-06","2025-06-12","2025-06-26","2025-09-25","2025-10-20","Lukas Andrade","Cerrado, epsrando CO, Lukas ya aceoto con Marco.",105,9,2025],
+[254,"CECINAS LLANQUIHUE","Analista Contable","Profesional",1,"RA","","CSC","Inactivo","Suspendido","NO",null,"2025-06-10","2025-06-11","2025-06-25",null,null,"","suspendido. Avisar al cliente que es un maximo de 3 meses para reactivar.",384,null,null],
+[255,"MSERVICE","Analista de Admin. y Contabilidad**","Profesional",1,"RA","","CdV","Inactivo","Cerrado","SI",null,"2025-06-09","2025-06-09","2025-06-23","2025-07-30","2025-08-04","Fabián Hurtado y Mariana Pernia","Se envio consolidado a cliente. Cliente esta viendo si contrata 2 por 3 meses y quede luego el mejor.",51,7,2025],
+[256,"MAS CONSULTORES","Contador","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2025-06-11","2025-06-16","2025-06-30","2025-10-09","2025-10-13","Carolina Cea","Felipe se compromete a ofertar esta semana (07.10), esperando Ok de Hernán.",115,10,2025],
+[257,"RIO FUTURO","Subgerente de Operaciones**","Gerente",1,"ML","GT","CSC","Inactivo","Suspendido","SI",null,null,"2025-07-01","2025-07-15",null,null,"","Se publico 30.06. Mona filtra, Glo entrevista.",364,null,null],
+[258,"RELONCAVí","Subgerente de Negocio Los Lagos","Gerente",1,"ML","","CSC","Inactivo","Cerrado","NO",null,null,"2025-06-23","2025-07-07","2025-08-23","2025-08-25","Francisco Garay","Insitir confirmación de ingreso, supuestamente entraba el 25.08",61,8,2025],
+[259,"RIA AUSTRAL","Supervisor de Mantenimiento **","Profesional",1,"BV","","CSC","Inactivo","Suspendido","SI",null,null,"2025-06-24","2025-07-08",null,null,"","SE CANCELA LA REPOSICIÓN. Se ha hablado mucho con la Rosa sobre que los candidatos se bajan al saber que es Ría, a ella también le ha pasado...la pobre indica lo mucho que han venido trabajando en el clima, cultura y estrategia este año ya que es un problema real que ellos tb detectan. Rosa admite qu Gaston (a quien sacaron) era un excelente trabajador, con todas las competencias, lamenta profundamente que Argenís lo desvinculara. OJO: Rosa comento que quiza podría cambiar la garantía por otro cargo, Bev le comento que en tal caso se debe revisar con el área comercial.",371,null,null],
+[260,"FRIOPAC","Subgerente de Planta","Gerente",1,"ML","","CSC","Inactivo","Cerrado","NO",null,"2025-06-26","2025-07-03","2025-07-17","2025-11-07","2025-11-17","Jorge Romani","Acepto C.O",127,11,2025],
+[261,"MAQSUR","Ingeniero proyecto TI","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-06-30","2025-07-02","2025-07-16","2025-08-01","2025-08-05","Carolina Ojeda","Se está ev. a finalista.",30,8,2025],
+[262,"MAQSUR","Ingeniero soporte TI","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-06-30","2025-07-02","2025-07-16","2025-08-07","2025-08-11","Antonio Jara","Cerrado",36,8,2025],
+[263,"TALBOT","Kam Hotel**","Profesional",1,"GT","","CdV","Inactivo","Cerrado","SI",null,null,"2025-07-01","2025-07-15","2025-11-06","2025-11-20","Carla Giaconi","Cerrado. no sabemos fecha de ingreso.",128,11,2025],
+[264,"MANARE","Encargado de desarrollo y control de calidad**","Profesional",1,"ML","RA","MJC","Inactivo","Suspendido","SI",null,"2025-07-01",null,null,null,null,"","Esperando aprobación",null,null,null],
+[265,"CABAÑAS TUNGULU","Gobernanta","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-07-01","2025-07-01","2025-07-15","2025-07-30","2025-08-11","Laura Vargas","29.07 esperando Carta Oferta para Laura Vargas.",29,7,2025],
+[266,"TECNOFAST","Ejecutivo Comercial Concepción (ahora 2°, 1° cerrada)","Profesional",2,"ML","","CdV","Inactivo","Cerrado","NO",null,"2025-07-03","2026-01-02","2026-01-16","2026-06-23","2026-07-07","Loreto Hirsch","Cerrado.",172,6,2026],
+[267,"TECNOFAST","Hunter Puerto Varas (ahora 2°, 1° cerrada)","Profesional",2,"GT","","CdV","Activo","Inicio","NO",null,"2025-07-03","2026-01-02","2026-01-16",null,null,"","Candidato rechaza carta oferta. Se reabre el proceso.",179,null,null],
+[268,"MAQSUR","Analista de Control de gestión","Profesional",1,"ML","","MJC","Inactivo","Cerrado","NO",null,"2025-07-03","2025-07-04","2025-07-14","2025-08-12","2025-08-18","Marcela Elgueta","Cerrado.",39,8,2025],
+[269,"BIOMASA SW","Téc. mecánico ( Ex Jefe de Mantenimiento)","Jefatura",1,"BV","","CSC","Inactivo","Cerrado","NO",null,null,"2025-09-26","2025-10-10","2025-12-01","2026-01-02","Carlos Garrido","Fecha de cierre 28.11.",66,12,2025],
+[270,"FRIOSUR","Analista Contable x2","Profesional",2,"BV","","CSC","Inactivo","Suspendido","NO",null,"2025-07-03","2025-07-14","2025-07-28","2025-08-19","2025-08-25","Darwin Moncoso","Marcelo pide apuasarlo hasta finales de Octubre (30.09)",36,8,2025],
+[271,"BIOMAR","Ejecutivo Atención a Clientes","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-07-10","2025-07-11","2025-07-25","2025-09-16","2025-10-01","Lidia Cheuqueta","Esperando carta Oferta.",67,9,2025],
+[272,"MANARE","Planner","Jefatura",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-07-14","2025-07-14","2025-07-28","2025-10-08","2025-10-20","Guillermo Peréz","Se cerrará el proceso con Guillermo Pérez. Gabriel quedó de enviar CO durante hoy 06/10.",86,10,2025],
+[273,"GREENSPOT /RESITER","Gerente General","Gerente",1,"ML","GT","CSC","Inactivo","Cerrado","NO",null,null,"2025-07-17","2025-07-31","2025-12-09","2026-01-01","Carlos Diaz","C.Co a Carlos",145,12,2025],
+[274,"GRUPO FRUTICOLA ROMA","Gerente de Administracion y Finanzas","Gerente",1,"ML","GT","MJC","Inactivo","Cerrado","NO",null,null,"2025-07-17","2025-07-31","2025-09-22","2025-10-20","Juan Pablo Abarca","CERRADO. 20.10 INGRESA",67,9,2025],
+[275,"CABAÑAS TUNGULU","Encargado Comercial","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-07-15","2025-07-15","2025-07-29","2025-07-31","2025-08-08","Olaya Domínguez","Esperando Carta Oferta para Olaya Dominguez",16,7,2025],
+[276,"MAS CONSULTORES","Coordinador de proyectos digitales.","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2025-07-17","2025-07-21","2025-08-04","2025-10-17","2025-11-17","Mónica da Rocha","Cerrado",88,10,2025],
+[277,"MAS CONSULTORES","Administrador de Plataformas","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2025-07-17","2025-07-21","2025-08-04","2025-11-12","2025-11-24","Pedro Delso y Benjamín Contreras","Contratan a 2.",114,11,2025],
+[278,"FRIOSUR","Administrativo Comex","Profesional",1,"BV","","MJC","Inactivo","Suspendido","NO",null,null,"2025-07-22","2025-08-05",null,null,"","Pablo pide suspender por motivos internos. 17.12.2025",343,null,null],
+[279,"FRIOSUR","Ingeniero de Logistica","Profesional",1,"RA","","MJC","Inactivo","Cerrado","NO",null,null,"2025-07-18","2025-08-01","2025-11-21","2025-11-24","Cristian Godoy","firmado",126,11,2025],
+[280,"MANARE","Ingeniero(a) Experto en RSA **","Jefatura",1,"GT","","MJC","Inactivo","Cerrado","SI",null,null,"2025-07-22","2025-08-05","2025-10-27","2025-11-04","Carolina Nuñez","Se enviará consolidado 27.10",97,10,2025],
+[281,"FRIOSUR","Ingeniero Soporte TI","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-07-23","2025-07-24","2025-08-07","2025-10-06","2025-10-20","Rodrigo Lagos","Estamos a la espera de la CO para Rodrigo Lagos.",74,10,2025],
+[282,"MAS CONSULTORES","Jefe de Proyecto Área Formación x2","Jefatura",2,"RA","","CSC","Inactivo","Cerrado","NO",null,"2025-07-22","2025-07-24","2025-08-07","2025-09-24","2025-10-15","Catalina Beffermann","Esperando C.O de la 2° vacante. Catalina reu cliente el viertnes 24.10, donde se le presrnto la oferta verbalmente, acorde.",62,9,2025],
+[283,"BIOMAR","Analista Personas (Pargua)","Profesional",1,"ML","","CSC","Inactivo","Cerrado","NO",null,"2025-07-22","2025-07-22","2025-08-05","2025-08-13","2025-08-20","Paola Rosas","Seguimiento Carta oferta.",22,8,2025],
+[284,"CASCADA TRAVEL","Jefe(a) de Personas","Jefatura",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-07-25","2025-07-28","2025-08-11","2025-09-11","2025-10-13","Paula Olivos","Cerrado",45,9,2025],
+[285,"OXXEAN","Gerente de Desarrollo de Proyectos","Gerente",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2025-07-25","2025-07-31","2025-08-14","2025-12-12","2025-12-22","Héctor Salomon","Carmencita cierra a su proceso.",134,12,2025],
+[286,"BIOMAR","Analista Administrativo Logístico","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-07-30","2025-08-01","2025-08-15","2025-09-02","2025-09-20","Richard Riveros","cuatro finalista con psicolaboral, esperando feedback cliente.",32,9,2025],
+[287,"CERMAQ","PMO /Gte Proyectos","Gerente",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2025-08-07","2025-08-11","2025-08-25","2025-10-13","2025-10-20","Claudio Muñoz","Cerrado.",63,10,2025],
+[288,"LACSUR","Gerente General","Gerente",1,"ML","GT","CdV","Inactivo","Cerrado","NO",null,"2025-08-08","2025-08-12","2025-08-26","2025-09-18","2025-09-29","Jorge Olivares","Cerrado con Jorge Olivares.",37,9,2025],
+[289,"AGRICOLA WESTFALIA","Gerente de Operaciones","Gerente",1,"ML","GT","CSC","Inactivo","Cerrado","NO",null,"2025-08-08","2025-08-13","2025-08-27","2026-02-24","2026-03-10","Cristian Ruiz Tagle","Enviado C.O, se presenta en reu presencial con cliente 23.02",195,2,2026],
+[290,"FRIOSUR","Prevencionista de Riesgo - Puerto Aysén","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-08-11","2025-08-11","2025-08-25","2025-12-03","2025-12-09","Omar Opitz","Omar O, en ev. psicolaboral, ya lo quieren ofertar.",114,12,2025],
+[291,"OXXEAN","Coodinador de Operaciones","Jefatura",1,"RA","","MJC","Inactivo","Cerrado","NO",null,"2025-08-13","2025-08-14","2025-08-28","2025-11-17","2025-11-19","Roberto Caneo","Roberto se junta a firmar presencial C.O",95,11,2025],
+[292,"VERDESUR","Ejecutivo Comercial**","Profesional",1,"ML","","CdV","Inactivo","Cerrado","SI",null,"2025-08-23","2025-09-01","2025-09-15","2025-10-23","2025-11-03","Catalina Angulo","Enviar informes finalistas, 20.10.",52,10,2025],
+[293,"CECINAS LLANQUIHUE","Analista de Nómina y Tiempo","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,"2025-08-26","2025-08-27","2025-09-10","2025-10-30","2025-11-04","Brian Quinchaman","un finalista,. en ev. Si le va bien, ofertan a Brain",64,10,2025],
+[294,"CECINAS LLANQUIHUE","Supervisor Despacho y Facturación","Profesional",1,"RA","","CSC","Inactivo","Suspendido","NO",null,"2025-09-01","2025-09-02","2025-09-16",null,null,"","Stan by. Restructuración del área, candidatos presentados, pero el Jefe no esta....de un día a otro se activará.",301,null,null],
+[295,"SAGO","Director Ejecutivo","Gerente",1,"ML","GT","CSC","Inactivo","Cerrado","NO",null,"2025-09-13","2025-09-29","2025-10-13","2025-12-09","2026-01-01","Hermann Rusch","Cerrado",71,12,2025],
+[296,"RÍO FUTURO","Subgerente de Calidad y Aseguramiento (P)**","Profesional",1,"ML","","MJC","Inactivo","Suspendido","NO",null,"2025-09-02","2025-09-02","2025-09-16",null,null,"","Se suspendió proceso.",301,null,null],
+[297,"CECINAS LLANQUIHUE","Asesor Seguridad y Salud Ocupacional","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,"2025-09-03","2025-09-03","2025-09-17","2025-10-15","2025-10-20","Victor Fuentes","Cerrado",42,10,2025],
+[298,"SURMEDICAL","Representante de Ventas","Jefatura",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2025-09-10","2025-09-12","2025-09-26","2026-01-06","2026-01-12","Mauricio Ruiz","enviada C.O, esperando aceptación.",116,1,2026],
+[299,"SOLUCENTER","Gte Comercial","Gerente",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-10-09","2025-10-09","2025-10-23","2025-12-01","2026-01-02","Michael Gonzalez","Se deja como 01.12 para facturación. se cerro 28.11.",53,12,2025],
+[300,"BIOMAR","Programador Logístico","Profesional",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-09-09","2025-09-10","2025-09-24","2025-09-24","2025-10-01","Ignacio Perez","23.09 se manda informes + consolidado. Proceso completo. Cerrado",14,9,2025],
+[301,"ALISUR","Jefe(a) de Administración y finanzas","Jefatura",1,"ML","","MJC","Inactivo","Cerrado","NO",null,"2025-09-15","2025-09-16","2025-10-02","2025-10-09","2025-10-27","Cristobal Schütz","Entra como GAF, $3.5m liq. Se llamo al cliente por antecedentes de quiebra empresa propia.",23,10,2025],
+[302,"BIOMAR","Analista Contable (reemplazo)","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2025-09-23","2025-09-23","2025-10-07","2025-10-14","2025-10-15","Denisse Oyarzún","Enviar informes dos finalistas 13.10....uno con observaciones.",21,10,2025],
+[303,"TALBOT","Housekeeper Hyatt (Jefe Propiedad)","Jefatura",1,"ML","","CdV","Activo","Medio","NO",null,"2025-09-26","2025-09-29","2025-10-13",null,null,"","Una finalista. Una nueva candidata nueva.",274,null,null],
+[304,"CABAÑAS TUNGULU","Gobernanta**","Profesional",1,"RA","","CdV","Inactivo","Cerrado","SI",null,"2025-09-25","2025-09-25","2025-10-09","2025-10-29","2025-10-29","Constanza Millalaf","Constanza va presencial, presentan CO en vivo.",34,10,2025],
+[305,"CITECMA","Jefe de Adm y Finanzas - Puerto Aysén **","Jefatura",1,"BV","","MJC","Inactivo","Suspendido","SI",null,"2025-09-30",null,null,null,null,"","Se suspende.",null,null,null],
+[306,"BIOMAR","Analista de Formulación","Profesional",1,"ML","RA","MJC","Inactivo","Cerrado","NO",null,"2025-09-29","2025-10-02","2025-10-16","2026-04-01","2026-04-15","Matías Meneces","Armando C.O a Matías",181,4,2026],
+[307,"FRIOSUR","Encargado Control de Gestión de Flota - Aysén","Profesional",1,"MJC","","CC","Inactivo","Suspendido","NO",null,"2025-09-29","2025-11-10","2025-11-24",null,null,"","El cliente cierran la búsqueda por su parte. Se cierra el proceso.",232,null,null],
+[308,"BADINOTTI","Gerente Comercial","Gerente",1,"ML","GT","MJC","Inactivo","Cerrado","NO",null,"2025-09-29","2025-10-03","2025-10-17","2025-12-15","2026-01-05","Andrés Elizer","CERRADO",73,12,2025],
+[309,"CERMAQ","Consultor Dynamic","Profesional",1,"RA","","CdV","Inactivo","Suspendido","NO",null,"2025-10-07","2025-10-14","2025-10-28",null,null,"","2 con psicolaboral.....candidatos se le aviso que standby. Julio pidio no hacer nada, pero Genesis brilla por su ausencia. MANDAR MAIL SUSPENDIENDO PROCESO.",259,null,null],
+[310,"CODELCO","Técnico Mecánico","Profesional",1,"RA","","CSC","Inactivo","Suspendido","NO",null,null,null,null,null,null,"","",null,null,null],
+[311,"TALBOT","Jefe de Alimento y bebidas - Hyatt Centric","Jefatura",1,"ML","","CC","Inactivo","Suspendido","NO",null,"2025-10-08","2025-10-21","2025-11-04",null,null,"","Se cerró con promoción interna.",252,null,null],
+[312,"OXYSUR","Analista Contable","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-10-16","2025-10-28","2025-11-11","2025-12-01","2025-12-08","Oriana Guevarra","Esperando C.O para Oriana",34,12,2025],
+[313,"BIOMAR","Especialista de Comunicaciones Internas","Profesional",1,"GT","","MJC","Inactivo","Cerrado","NO",null,null,"2025-10-21","2025-11-04","2026-03-03","2026-03-15","Camila Amigo","Finalista, Camila Amigo, se entrevistará el 03.03 con cliente.",133,3,2026],
+[314,"CPI EQUIPMENT","Técnico Electrónico","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2025-10-20","2025-10-22","2025-11-05","2025-12-15","2025-12-22","Braulio Nieto","Cerrado. Carmencita agradece al volver",54,12,2025],
+[315,"CECINAS LLANQUIHUE","Supervisor de TradeMKT","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,"2025-10-27","2025-10-28","2025-11-11","2025-12-10","2025-12-15","Cristián Moran","Cerrado",43,12,2025],
+[316,"BIOMAR","Jefe de Personal y Remuneraciones","Jefatura",1,"ML","","MJC","Inactivo","Suspendido","NO",null,"2025-11-25","2025-10-29","2025-11-12",null,"2026-02-09","Interno","Suben a pp interna.",244,null,null],
+[317,"RÍA AUSTRAL","Planificador mantenimiento","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2025-10-29","2025-10-30","2025-11-13","2025-12-01","2025-12-05","Pablo Saldivas","Con informe, con obervaciones. Hacer seguimiento.",32,12,2025],
+[318,"MANARE","Encargado(a) de Comex","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-11-03","2025-11-04","2025-11-18","2026-01-05","2026-01-29","Jabib Nacif","Coordinan fecha de ingreso entre las partes, de todas maneras enero. (se coloca fecha tentativa)",62,1,2026],
+[319,"SALFA (SOLO PRESENTAR)","Gte de Sucursal - Temuco","Gerente",1,"ML","GT","","Inactivo","Suspendido","NO",null,null,null,null,null,null,"","Agradecer (glo).",null,null,null],
+[320,"EMPANADAS PUERTO VARAS","Encargado de Marketing","Profesional",1,"RA","","MJC","Inactivo","Cerrado","NO",null,"2025-11-04","2025-11-06","2025-11-20","2026-01-12","2026-02-02","Mario Morales","Cerrado",67,1,2026],
+[321,"CECINAS LLANQUIHUE","Monitor de Calidad","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,"2025-11-11","2025-11-12","2025-11-26","2026-02-25","2026-03-09","Nicolás Betarcour","Esperando C.O. Aún no firma, buscando arriendo.",105,2,2026],
+[322,"IGUERRA","Desarrollador de negocios","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2025-11-11","2025-11-13","2025-11-27","2026-02-11","2026-02-28","Sebastian Ortiz","Cierran oferta en reu presencial. 5mliq + variable",90,2,2026],
+[323,"TALBOT","Jefe de Bar Tender","Jefatura",1,"RA","","CdV","Inactivo","Cerrado","NO",null,"2025-11-18","2025-11-24","2025-12-08","2026-01-15","2026-02-09","Adrían Torreblanca","Cerrado.",52,1,2026],
+[324,"MAQUIRA","KAM dental","Jefatura",1,"RA","","CdV","Inactivo","Suspendido","NO",null,"2025-11-19","2025-11-24","2025-12-08",null,null,"","Suspendido. Hay que agradecer en TT.",218,null,null],
+[325,"MULTI X","Jefe de Aseguramiento y Calidad","Jefatura",1,"RA","GT","MJC","Inactivo","Cerrado","NO",null,"2025-11-18","2025-11-20","2025-12-04","2026-01-14","2026-02-16","Olga Zuñiga","Cerrado",55,1,2026],
+[326,"VAXXINOVA","Gerente General","Gerente",1,"ML","GT","CdV","Inactivo","Cerrado","NO",null,"2025-11-20","2025-11-27","2025-12-11","2026-02-11","2026-04-12","José Tomás Rebeco","Esperando firma contrato.",76,2,2026],
+[327,"RIA AUSTRAL","Gerente de Planta / GG","Gerente",1,"ML","GT","MJC","Inactivo","Suspendido","NO",null,"2025-11-28","2025-12-10","2025-12-24",null,null,"","Esperando fecha entrevista cliente",202,null,null],
+[328,"RIA AUSTRAL","Jefe de Operaciones Cultivo","Jefatura",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2025-11-28","2025-12-10","2025-12-24","2026-03-11","2026-04-01","Sergio Millacura","Cerrado",91,3,2026],
+[329,"EMPACK","Account Manager","Jefatura",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2025-11-28","2025-12-03","2025-12-17","2026-02-04","2026-02-16","Gustavo Reyes","3 con informe, insistir feedback.",63,2,2026],
+[330,"CECINAS LLANQUIHUE","Administrativo Contable","Profesional",1,"RA","","CSC","Inactivo","Suspendido","NO",null,"2025-11-29","2025-12-05","2025-12-19",null,null,"","Glo mandara correo de suspensión.",207,null,null],
+[331,"COMOSA","Business Intelligence","Jefatura",1,"GT","","MJC","Inactivo","Cerrado","NO",null,"2025-12-10","2026-01-26","2026-02-09","2026-06-09","2026-06-15","Francisco Molina","Cerrado con Francisco Molina",134,6,2026],
+[332,"MULTI X","Jefe de Área de Tratamiento de Peces","Jefatura",1,"GT","","MJC","Inactivo","Cerrado","NO",null,"2025-12-11","2025-12-23","2026-01-06","2026-04-23","2026-05-04","Diego Araneda","Cerrado.",121,4,2026],
+[333,"MULTI X","Jefe de Logística y Operaciones","Jefatura",1,"GT","","MJC","Inactivo","Suspendido","NO",null,"2025-12-12","2025-12-26","2026-01-09",null,null,"","Se envio la longlist 17-01.",186,null,null],
+[334,"MAQSUR","Analista de Repuestos","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2025-12-13","2025-12-19","2026-01-02","2026-01-26","2026-02-01","Francisco Gómez Guerrero","Cerrado.",38,1,2026],
+[335,"MERITENS","Jefe Postventa","Jefatura",1,"ML","","CdV","Activo","Final","NO",null,"2025-12-22","2026-01-02","2026-01-16",null,null,"Jorge Moyano","Carta Oferta enviada. Candidato con dudas.",179,null,null],
+[336,"CPI EQUIPMENT","Prevencionista de Riesgos","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2025-12-17","2025-12-17","2025-12-31","2026-04-13","2026-04-14","Interno.","Cliente avisa el 13.04 que ingreso una persona interna de ellos. Proceso completo",117,4,2026],
+[337,"CITECMA** (reposición)","Jefe de Administración y Finanzas - Aysén","Jefatura",1,"BV","","MJC","Inactivo","Suspendido","SI",null,"2025-12-22","2026-01-07","2026-01-21",null,null,"","Suspenden proceso 27.02.26",174,null,null],
+[338,"FEROSOR","Gte de Administración y Finanzas","Gerente",1,"ML","GT","CSC","Inactivo","Suspendido","NO",null,"2025-12-26",null,null,null,null,"","Cerrado. Asendieron a un candidato interno.",null,null,null],
+[339,"CERMAQ","Jefe de RR.HH - Planta Quemchi","Jefatura",1,"ML","","CdV","Inactivo","Cerrado","NO",null,"2026-01-05","2026-01-14","2026-01-28","2026-04-23","2026-05-18","Elmy Reyes","Cerrado",99,4,2026],
+[340,"CERMAQ","Subgte de mantención y operaciones - Agua Dulce","Gerente",1,"ML","","MJC","Inactivo","Cerrado","NO",null,"2026-01-05","2026-01-08","2026-01-22","2026-05-19","2026-07-01","Marco Neira","Cerrado. Segunda posision (Freddy Klein)",131,5,2026],
+[341,"CECINAS LLANQUIHUE","Técnico Eléctrico. x 2","Profesional",2,"RA","","","Inactivo","Cerrado","NO",null,"2026-01-06","2026-01-06","2026-01-21","2026-05-13","2026-05-18","Daniel Galaz / Cristhoper Vargas","Cerrado.",127,5,2026],
+[342,"GALILEA","Constructor Residente- OSORNO O VALDIVIA","Profesional",1,"BV","","MJC","Inactivo","Cerrado","NO",null,"2026-01-12","2026-01-12","2026-01-26","2026-04-24","2026-06-01","Rodrigo Escobar","Rodrigo Escobar ingresa el 01/06, aún está pendiente el envío de documentos.",102,null,2026],
+[343,"PHAROS","Analista Contable","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2026-01-09","2026-01-15","2026-01-29","2026-02-24","2026-03-02","Ivett Vera","armando consolidado con 3° finalista",40,2,2026],
+[344,"BIOMASA SW","Gerente General","Gerente",1,"ML","GT","CdV","Inactivo","Cerrado","NO",null,"2026-01-07","2026-01-21","2026-02-04","2026-05-17","2026-07-01","José Ignacio Viterbo","Cerrado.",116,5,2026],
+[345,"FRIOSUR","Asistente de Gerencia","Profesional",1,"RA","","MJC","Inactivo","Suspendido","NO",null,"2026-01-13","2026-01-13","2026-01-27",null,null,"","La Glo vuelve a insistir. Si no hay respuesta se suspende.",168,null,null],
+[346,"SALFA SUR","Gerente de Finanzas","Gerente",1,"GT","ML","CdV","Activo","Medio","NO",null,"2026-01-13","2026-02-13","2026-02-27",null,null,"","Se presentaton nuevos candidatos. Se republica.",137,null,null],
+[347,"MANARE**","Planner**","Profesional",1,"BV","","CSC","Inactivo","Cerrado","SI",null,"2026-01-19","2026-01-19","2026-02-02","2026-04-06","2026-04-13","Fco Ordenes","",77,4,2026],
+[348,"SITECNA","Jefe de Proyectos Astillero","Jefatura",1,"GT","ML","CdV","Inactivo","Cerrado","NO",null,"2026-01-20","2026-01-22","2026-02-05","2026-03-23","2026-04-06","Luz Muñoz","Cerrado con Luz Muñoz.",60,3,2026],
+[349,"SALFA SUR","Jefe de Marketing - Puerto Montt","Jefatura",1,"GT","ML","","Inactivo","Cerrado","NO",null,"2026-02-05","2026-02-06","2026-02-20","2026-05-28","2026-06-15","Nicole Ghirardelli","Cerrado",111,5,2026],
+[350,"MULTI X","Jefe de Wellboats y Acopio","Jefatura",1,"GT","","MJC","Inactivo","Suspendido","NO",null,"2026-01-29","2026-02-06","2026-02-20",null,null,"","Nuevo cargo, se envía propuesta de publicación....sin respuesta, insistir.",144,null,null],
+[351,"GRUPO B (BEMAQ)","Ejecutivo Técnico Comercial - STGO","Profesional",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2026-02-03","2026-02-06","2026-02-20","2026-04-29","2026-05-04","Fco Rubilar","Se juntan el 29 para ofertar presencial a Fco Rubilar.",82,4,2026],
+[352,"CLINICA PUERTO VARAS","SubGerente de Administracion y Finanzas","Gerente",1,"GT","","MJC","Inactivo","Suspendido","NO",null,"2026-01-28","2026-02-03","2026-02-17",null,null,"","Suspendido.",147,null,null],
+[353,"WEC","Coordinador de Comunicaciones - Stgo","Jefatura",1,"ML","","MJC","Inactivo","Suspendido","NO",null,"2026-01-30","2026-02-05","2026-02-19",null,null,"","Suspende por temas internos.",145,null,null],
+[354,"MANUKA","Líder de Bienestar","Jefatura",1,"ML","","CC","Inactivo","Suspendido","NO",null,"2026-02-04","2026-02-16","2026-03-02",null,null,"","Se cerró con promoción interna.",134,null,null],
+[355,"EMPACK / QUIMICK","Jefe de Desarrollo Pharma - STGO","Jefatura",1,"GT","","CC","Inactivo","Cerrado","NO",null,"2026-01-30","2026-02-03","2026-02-17","2026-06-19","2026-07-01","Carlos García","Cerrado.",136,null,null],
+[356,"IGUERRA","Ingeniero Abastecimiento y Logística - CONCE","Jefatura",1,"BV","","CdV","Inactivo","Cerrado","NO",null,"2026-02-06","2026-02-16","2026-03-02","2026-04-02","2026-04-20","Julio Jimenez","Julio ingresa el 20.04, día que tiene el vuelo. Conce-stgo-España",45,4,2026],
+[357,"HABASIT","Ejecutivo Técnico Comercial - PUERTO MONTT","Profesional",1,"BV","","CSC","Inactivo","Cerrado","NO",null,"2026-02-11","2026-02-12","2026-02-26","2026-04-23","2026-05-04","Ananias Velasquez","CERRADO. $1.650.000 asegurado x 3 meses.",70,4,2026],
+[358,"BIOMAR","Ingeniero(a) de Procesos Sr","Profesional",1,"ML","","CdV","Inactivo","Suspendido","NO",null,"2026-02-12","2026-02-13","2026-02-27",null,null,"","Se cancela el proceso.",137,null,null],
+[359,"SITECNA","Subgerente de Control de Gestión","Gerente",1,"ML","","CC","Inactivo","Cerrado","NO",null,"2026-02-16","2026-02-19","2026-03-05","2026-05-22","2026-06-08","Esteban Ruiz","Cerrado. Al segundo posible candidato lo baja el cliente.",92,5,2026],
+[360,"NUECES DEL SUR","Ingeniero(a) Control de Gestion","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,"2026-02-16","2026-02-17","2026-03-03","2026-03-24","2026-04-01","Cristian Rivas","Cerrado",35,null,null],
+[361,"NUECES DEL SUR","Analista Contable y Administrativo","Profesional",1,"RA","","CSC","Inactivo","Cerrado","NO",null,"2026-02-16","2026-02-17","2026-03-03","2026-04-06","2026-05-04","Susana Thompson","Preparando C.O",48,null,null],
+[362,"AGRICOLA CRAN","Ingeniero(a) Control de Gestion - VALDIVIA","Profesional",2,"RA","","CSC","Inactivo","Cerrado","NO",null,"2026-02-16","2026-02-16","2026-03-02","2026-03-20","2026-03-25","Javiera Martinez /José Antonio","Cerrado 2 POSICIONES. Javiera entra el 6 de abril y él el 25.03",32,null,null],
+[363,"TALBOT (HYATT)","KAM - Santiago","Profesional",1,"RA","","","Inactivo","Suspendido","NO",null,"2026-03-09","2026-03-10","2026-03-24",null,null,"2026-05-11 00:00:00","Cancelaron el proceso por reestructuración interna.",112,null,null],
+[364,"CIBA","Gerente General","Gerente",1,"ML","GT","CdV","Activo","Final","NO",null,"2026-02-25","2026-03-09","2026-03-23",null,null,"","Estamos con terna final. Esperando feedback. Nuevo candidato lo entrevista la Glo 1.07",113,null,null],
+[365,"MANARE","Comex **","Profesional",1,"BV","","MJC","Inactivo","Cerrado","SI",null,null,"2026-03-12","2026-03-26","2026-04-24","2026-05-18","Cristina Zavala","Cliente haciendo C.O, ingreso lunes 18.05",43,4,2026],
+[366,"EMPANADAS PV","Líder de Marketing**","Profesional",1,"RA","","","Inactivo","Cerrado","SI",null,"2026-03-16","2026-03-20","2026-04-03","2026-05-26","2026-06-01","Catalina Vigouroux","Cerrado",67,5,2026],
+[367,"REMAP","Jefe(a) de Administración y finanzas","Jefatura",1,"GT","ML","CdV","Activo","Final","NO","2026-03-19","2026-03-24","2026-03-30","2026-04-13",null,null,"","Finalista fue a planta a entrevista con el director.",92,null,null],
+[368,"TORALLA","Asistente Comercial (2 posiciones) - Chiloé","Profesional",2,"MJC","","CC","Activo","Esperando Aprobación","NO","2026-03-19",null,"2026-03-30","2026-04-13",null,null,"","Cerrada primera posición. Esperado aprobacion para la segunda",92,null,null],
+[369,"CORPORACION CRECE MEJOR","Psicòlogos (2 posiciones)","Profesional",2,"","","","Inactivo","Suspendido","NO",null,null,null,null,null,null,"","Falta fecha para levantar perfil.",null,null,null],
+[370,"CORPORACION CRECE MEJOR","Trabajador Social","Profesional",1,"","","","Inactivo","Suspendido","NO",null,null,null,null,null,null,"","Falta fecha para levantar perfil.",null,null,null],
+[371,"AQP (Benchmark)","Asistente Técnico - Médico Veterinario - Aysén","Profesional",1,"ML","GT","","Inactivo","Suspendido","NO","2026-03-30",null,"2026-04-07","2026-04-21",null,null,"","Cancelado.",84,null,null],
+[372,"MERITENS","Ing. de ventas (Técnicas) - X y XI","Profesional",1,"","GT","CdV","Inactivo","Cerrado","NO","2026-03-31",null,"2026-03-31","2026-04-14","2026-05-15","2026-06-01","Emilis Velasco","Cerrado.",45,5,2026],
+[373,"ABE STORE","KAM Agrícola - STGO","Profesional",1,"GT","","CdV","Inactivo","Cerrado","NO","2026-04-01","2026-04-02","2026-04-07","2026-04-21","2026-06-12","2026-06-15","Paulo Riveros","Cerrado.",66,6,2026],
+[374,"BIOMASA SW","Técnico Mecánico**","Profesional",1,"MJC","CC","","Inactivo","Suspendido","SI","2026-04-01","2026-04-02","2026-04-10","2026-04-24",null,null,"","Cliente lo cierra internamente.",81,null,null],
+[375,"OXYSUR","Subgerente de Operaciones y Logística - CONFIDENCIAL","Gerente",1,"GT","ML","CdV","Activo","Final","NO","2026-04-02","2026-04-02","2026-04-08","2026-04-22",null,null,"","Esperado carta oferta del interno.",83,null,null],
+[376,"SOLUCORP","KAM Chiloe (planta productiva)","Profesional",1,"ML","","CdV","Inactivo","Cerrado","NO","2026-04-07","2026-04-09","2026-04-17","2026-05-01","2026-05-18","2026-06-01","Jazmin Perez","Cerrado.",31,5,2026],
+[377,"SOLUCORP","KAM Puerto Montt (planta productiva)","Profesional",1,"ML","","CdV","Inactivo","Suspendido","NO","2026-04-07","2026-04-09","2026-04-17","2026-05-01",null,null,"","Proceso suspendido.",74,null,null],
+[378,"SOLUCORP","Subgerente Ventas Zona Sur (planta productiva)","Gerente",1,"ML","","CdV","Inactivo","Cerrado","NO","2026-04-07","2026-04-09","2026-04-17","2026-05-01","2026-05-05","2026-05-15","Cristina Campos.","Cerrado.",18,5,2026],
+[379,"CECINAS LLANQUIHUE","Vendedor - Pto. Montt","Profesional",1,"CC","","MJC","Activo","Medio","NO","2026-04-17","2026-04-21","2026-04-28","2026-05-12",null,null,"","Se presentaron nuevos candidatos. Esperando agenda de ellos.",63,null,null],
+[380,"CECINAS LLANQUIHUE","Vendedor - Valdivia","Profesional",1,"MJC","CC","","Inactivo","Cerrado","NO","2026-04-17","2026-04-21","2026-04-28","2026-05-14","2026-06-02","2026-06-09","Cristian Vilugrón","Se cierra el proceso con Cristian Vilugrón",35,6,2026],
+[381,"CECINAS LLANQUIHUE","Vendedor - Osorno","Profesional",1,"MJC","CC","","Inactivo","Cerrado","NO","2026-04-17","2026-04-21","2026-04-28","2026-05-14","2026-05-20","2026-05-25","Pablo Arriagada","Se cerró con un candidato de ellos.",22,5,2026],
+[382,"RIO FUTURO","Jefe(a) de Mantención","Jefatura",1,"ML","GT","CC","Inactivo","Suspendido","NO","2026-04-20",null,null,null,null,null,"","Proceso contra exito y se cerró con otra consultora. Se cancela.",null,null,null],
+[383,"MULTI X","Jefe de Wellboats y Acopio","Jefatura",1,"GT","MJC","CC","Activo","Medio","NO",null,null,"2026-04-29","2026-05-13",null,null,"","Esperando feedback.",62,null,null],
+[384,"QUIMICA DEL SUR","Gerente de Sucursal Antofagasta","Gerente",1,"ML","GT","CdV","Activo","Medio","NO",null,"2026-04-23","2026-04-27","2026-05-11",null,null,"","Cliente entrevista presencial a los finalistas. Cliente entrevista online a dos nuevos.",64,null,null],
+[385,"MULTI X","Mecánico especialista Centro","Profesional",1,"MJC","","CC","Activo","Medio","NO",null,"2026-04-29","2026-05-06","2026-05-20",null,null,"","Se le va a mandar feedback de levatamiento de mercado.",55,null,null],
+[386,"PUDÚ","Jefe(a) Comercial","Jefatura",1,"MJC","CC","","Activo","Medio","NO","2026-04-28","2026-04-27","2026-04-30","2026-05-14",null,null,"","Se va a levantar las capacidades de liderazgo del candidato finalista. (Claudita)",61,null,null],
+[387,"PHAROS","Analista Contable **","Profesional",1,"CC","GT","","Inactivo","Cerrado","SI",null,null,"2026-04-27","2026-05-11","2026-05-15","2026-05-18","Alenis Sánchez","Cerrado.",18,5,2026],
+[388,"SOLUCORP","KAM Concepción (planta productiva)","Profesional",1,"ML","","CdV","Inactivo","Cerrado","NO","2026-05-06","2026-05-06","2026-05-06","2026-05-20","2026-06-20","2026-07-01","Manuel Vivallo","Cerrado",45,6,2026],
+[389,"IMAHE","Vendedor(a) en Terreno Concepción","Profesional",1,"MJC","","CC","Activo","Medio","NO",null,null,"2026-05-19","2026-06-02",null,null,"","La semana pasada cliente entrevistó. Uno candidato pasa a evaluación psicolaboral.",42,null,null],
+[390,"ALIMEX","Gerente de Operaciones","Gerente",1,"GT","ML","CdV","Activo","Medio","NO","2026-05-22","2026-05-26","2026-06-01","2026-06-15",null,null,"","Se presentaron candidatos. Esperando feedback.",29,null,null],
+[391,"CECINAS LLANQUIHUE","Supervisor o Líder de Facturación","Profesional",1,"MJC","CC","","Activo","Esperando Aprobación","NO","2026-05-20","2026-05-25",null,null,null,null,"","Stand by por 30 días.",null,null,null],
+[392,"REMAP","Gerente Comercial (CONFIDENCIAL)","Gerente",1,"GT","ML","CdV","Activo","Medio","NO",null,null,"2026-06-05","2026-06-19",null,null,"","Se mandadon candidatos. Esperando feedback.",25,null,null],
+[393,"PUCLARO","Encargado PAC","Jefatura",1,"CC","","MJC","Activo","Medio","NO","2026-05-26","2026-05-28","2026-06-08","2026-06-22",null,null,"","Hoy se da feedback post entrevista. Se va a recomendar entrevistar.",22,null,null],
+[394,"CECINAS LLANQUIHUE","Encargado(a) de Facturación Coyhaique","Profesional",1,"CC","","MJC","Activo","Medio","NO","2026-05-20","2026-05-25","2026-06-04","2026-06-18",null,null,"","Se va a hacer seguimiento. Esperando feedback longlist.",26,null,null],
+[395,"CERMAQ","Subgerente de Alimentación Agua Mar","Gerente",1,"ML","","CdV","Activo","Final","NO","2026-05-20","2026-05-25",null,null,null,null,"","Cliente entrevistó en cermaq el viernes. El cliente mañana el 1ro de Julio en Puelche.",null,null,null],
+[396,"EMPACK","Account Manager (Concepción)","Profesional",1,"ML","","CdV","Activo","Medio","NO","2026-06-03",null,null,null,null,null,"","Esperando agenda cliente para entrevistas con candidatos.",null,null,null],
+[397,"VOIPIR","Gerente de Ventas y Distribución","Gerente",1,"ML","","","Activo","Esperando Aprobación","NO",null,null,"2026-06-22","2026-07-06",null,null,"","Esperando aprobación",8,null,null],
+[398,"VOIPIR","Jefe Rendimiento Operacional","Profesional",1,"MJC","","CC","Activo","Inicio","NO","2026-06-10",null,"2026-06-22","2026-07-06",null,null,"","Se entrega en fecha.",8,null,null],
+[399,"CECINAS LLANQUIHUE","*Técnico Eléctrico (R)*","Profesional",1,"CC","","MJC","Activo","Medio","SI",null,null,"2026-06-09","2026-06-23",null,null,"","Preseleccionaron a 3 candidatos. Se entrevista hoy (Carla)",21,null,null],
+[400,"COMERCIAL AUSTRAL CHILE","Encargado RRHH","Profesional",1,"ML","","CC","Activo","Medio","NO","2026-06-04","2026-06-11","2026-06-11","2026-06-25",null,null,"","Cliente entrevista mañana a los candidatos preseleccionados (1.07)",19,null,null],
+[401,"RELONCAVI","Subgerente de Negocios","Gerente",1,"ML","","CdV","Activo","Inicio","NO",null,null,null,null,null,null,"","Se presentaron candidatos. Esperando feedback.",null,null,null],
+[402,"SOLUCENTER","Encargado de local Arauco","Jefatura",1,"MJC","","CC","Activo","Inicio","NO",null,null,"2026-06-22","2026-07-06",null,null,"","Se presenta en fecha.",8,null,null],
+[403,"MOLINOS KUNTSMANN","Subgerente de Personas","Gerente",1,"GT","ML","","Activo","Inicio","NO","2026-06-22","2026-06-26",null,null,null,null,"","Esperando aprobación de perfil.",null,null,null],
+[404,"MULTI X","Jefe Cumplimiento Normativo y Gestión Ambiental","Jefatura",1,"GT","ML","CC","Activo","Inicio","NO","2026-06-17","2026-06-17","2026-06-18","2026-07-02",null,null,"","Se entrega en fecha.",12,null,null],
+[405,"CERMAQ","JEFE DE INCUBACION / HATCHERY","Jefatura",1,"ML","GT","MJC","Activo","Inicio","NO","2026-06-18","2026-06-17",null,null,null,null,"","Se republicó. Se presenta en fecha.",null,null,null],
+[406,"CERMAQ","ASISTENTE CALIDAD AGUAS","Profesional",1,"ML","GT","MJC","Activo","Inicio","NO","2026-06-18","2026-06-17",null,null,null,null,"","Se entrega en fecha.",null,null,null],
+[407,"CERMAQ","ASISTENTE AGUA DULCE","Profesional",1,"ML","GT","MJC","Activo","Inicio","NO","2026-06-18","2026-06-17",null,null,null,null,"","Se entrega en fecha.",null,null,null],
+[408,"RIA AUSTRAL","Encargado(a) de Remuneraciones y Relaciones Laborales","Profesional",1,"MJC","CC","","Activo","Esperando Aprobación","NO","2026-06-18",null,null,null,null,null,"","Esperando aprobación.",null,null,null],
+[409,"Q HIELO","Jefe Zonal Sur","Jefatura",1,"","","","Activo","Inicio","NO","2026-06-26",null,null,null,null,null,"","Esperando coordinacion para levantamiento de perfil.",null,null,null],
+[410,"Q HIELO","Supervisor de Planta","Profesional",1,"","","","Activo","Inicio","NO","2026-06-26",null,null,null,null,null,"","Esperando coordinacion para levantamiento de perfil.",null,null,null]
+]
+.map(r=>{const o={};FIELDS.forEach((f,i)=>o[f]=r[i]);return o;});
+
+let nextId=Math.max(...DATA.map(r=>r.id))+1;
+let curTab='procesos',sortCol='emp',sortDir=1;
+let activeCell=null;
+
+// ─── WORKDAY: +N días hábiles (lun-vie) ────────────────────────────────────
+function workday(dateStr, days){
+  if(!dateStr) return null;
+  let d = new Date(dateStr);
+  let added = 0;
+  while(added < days){
+    d.setDate(d.getDate()+1);
+    const dow = d.getDay();
+    if(dow!==0 && dow!==6) added++;
+  }
+  return d.toISOString().split('T')[0];
+}
+
+// Auto-calc Long List when aprobación perfil is set
+function calcLL(apr){ return workday(apr, 10); }
+// Carga: 1.25 for Gerente, 1 otherwise
+function calcCarga(r){ return (r.tipo==='Gerente' || (r.n && r.n>1)) ? 1.25 : 1.0; }
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+function fmtDate(d){
+  if(!d)return'';
+  try{const p=d.split('-');return`${p[2]}/${p[1]}/${p[0].slice(2)}`;}catch{return '';}
+}
+function etapaBadge(et, full){
+  const m={Cerrado:'b-cerrado',Suspendido:'b-suspendido',Inicio:'b-inicio',Medio:'b-medio',Final:'b-final','Esperando Aprobación':'b-aprobacion'};
+  const label = (et==='Esperando Aprobación' && !full) ? 'Esp. Aprob.' : (et||'—');
+  return`<span class="badge ${m[et]||'b-vacio'}">${label}</span>`;
+}
+function pills(c1,c2,ap){
+  return(c1?`<span class="cons-pill">${c1}</span>`:'')+(c2?`<span class="cons-pill">${c2}</span>`:'')+(ap?`<span class="cons-pill ap">${ap}</span>`:'');
+}
+const ETAPA_OPTS=['','Esperando Aprobación','Inicio','Medio','Final','Cerrado','Suspendido'];
+const TIPO_OPTS=['','Gerente','Jefatura','Profesional'];
+const MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+// ─── SELECTS ────────────────────────────────────────────────────────────────
+function fillSel(id,opts){
+  const el=document.getElementById(id); if(!el)return;
+  while(el.options.length>1)el.remove(1);
+  opts.forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=`${k} — ${CMAP(k)}`;el.appendChild(o);});
+}
+function initSelects(){
+  fillSel('n-c1',CONS_OPTS()); fillSel('n-c2',CONS_OPTS()); fillSel('n-ap',APOYO_OPTS());
+  const fe=document.getElementById('f-etapa');
+  while(fe.options.length>1)fe.remove(1);
+  [...new Set(DATA.map(r=>r.et).filter(Boolean))].sort().forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;fe.appendChild(o);});
+  const fc=document.getElementById('f-cons');
+  while(fc.options.length>1)fc.remove(1);
+  [...new Set([...CONS_OPTS(),...APOYO_OPTS()])].sort().forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=`${k} — ${CMAP(k)}`;fc.appendChild(o);});
+}
+
+// ─── COMMIT CELL ────────────────────────────────────────────────────────────
+function commitCell(rowId,field,value){
+  const r=DATA.find(x=>x.id===rowId); if(!r)return;
+  r[field]=value;
+  // Auto-update Status based on Etapa
+  if(field==='et'){
+    const ACTIVAS=['Inicio','Medio','Final','Esperando Aprobación'];
+    r.st = ACTIVAS.includes(value) ? 'Activo' : 'Inactivo';
+    if(value==='Cerrado'){
+      activeCell=null;
+      openEdit(rowId);
+      return;
+    }
+  }
+  // Auto-calc Long List from Aprobación Perfil
+  if(field==='apr'){
+    r.ll = calcLL(value);
+  }
+  // Auto-calc duration
+  if((field==='fi'||field==='lp')&&r.fi&&r.lp){
+    const d=Math.round((new Date(r.fi)-new Date(r.lp))/86400000);
+    if(d>0){r.dur=d;const dt=new Date(r.fi);r.mc=dt.getMonth()+1;r.ac=dt.getFullYear();}
+  }
+  activeCell=null; render();
+  saveToSheets(r); // Auto-save to Sheets
+}
+
+// ─── EDIT MODAL (al cerrar proceso) ──────────────────────────────────────────
+let editingId=null;
+function openEdit(id){
+  editingId=id;
+  const r=DATA.find(x=>x.id===id); if(!r)return;
+  document.getElementById('e-title').textContent=r.proc+' — '+r.emp;
+  document.getElementById('e-cand').value=r.cand||'';
+  document.getElementById('e-fco').value=r.fco||'';
+  document.getElementById('e-fi').value=r.fi||'';
+  document.getElementById('ov-edit').classList.add('open');
+  render();
+}
+function closeEdit(){
+  document.getElementById('ov-edit').classList.remove('open');
+  editingId=null;
+  render();
+}
+function saveEdit(){
+  const r=DATA.find(x=>x.id===editingId); if(!r){closeEdit();return;}
+  r.cand=document.getElementById('e-cand').value.trim();
+  r.fco=document.getElementById('e-fco').value||null;
+  r.fi=document.getElementById('e-fi').value||null;
+  if(r.fi&&r.lp){
+    const d=Math.round((new Date(r.fi)-new Date(r.lp))/86400000);
+    if(d>0){r.dur=d;const dt=new Date(r.fi);r.mc=dt.getMonth()+1;r.ac=dt.getFullYear();}
+  }
+  saveToSheets(r); // Save to Sheets
+  closeEdit();
+}
+
+// ─── INLINE CELL ────────────────────────────────────────────────────────────
+function makeCell(rowId,field,display,editType,opts=null){
+  const isActive=activeCell&&activeCell.rowId===rowId&&activeCell.field===field;
+  const r=DATA.find(x=>x.id===rowId);
+  if(isActive){
+    if(editType==='text'){
+      const val=(r[field]||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      return`<td><div class="cell"><input class="cell-input" value="${val}" id="ci-${rowId}-${field}" onblur="commitCell(${rowId},'${field}',this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){activeCell=null;render();}"></div></td>`;
+    }
+    if(editType==='date'){
+      const val=r[field]||'';
+      return`<td><div class="cell"><input type="date" class="cell-date" value="${val}" id="ci-${rowId}-${field}" onchange="commitCell(${rowId},'${field}',this.value||null)" onkeydown="if(event.key==='Escape'){activeCell=null;render();}"></div></td>`;
+    }
+    if(editType==='select'){
+      const val=r[field]||'';
+      const oh=opts.map(o=>`<option value="${o}"${o===val?' selected':''}>${o||'—'}</option>`).join('');
+      return`<td><div class="cell"><select class="cell-select" id="ci-${rowId}-${field}" onchange="commitCell(${rowId},'${field}',this.value)" onblur="setTimeout(()=>{if(activeCell){activeCell=null;render();}},120)" onkeydown="if(event.key==='Escape'){activeCell=null;render();}">${oh}</select></div></td>`;
+    }
+    if(editType==='cons'){
+      const mkO=(arr,f2)=>arr.map(o=>`<option value="${o}"${o===(r[f2]||'')?' selected':''}>${o} — ${CMAP(o)}</option>`).join('');
+      return`<td><div class="cons-editor">
+        <div class="cons-row"><span class="cons-lbl">1ª</span><select class="cell-select" onchange="commitCell(${rowId},'c1',this.value)"><option value="">—</option>${mkO(CONS_OPTS(),'c1')}</select></div>
+        <div class="cons-row"><span class="cons-lbl">2ª</span><select class="cell-select" onchange="commitCell(${rowId},'c2',this.value)"><option value="">—</option>${mkO(CONS_OPTS(),'c2')}</select></div>
+        <div class="cons-row"><span class="cons-lbl">Ap</span><select class="cell-select" onchange="commitCell(${rowId},'ap',this.value)"><option value="">—</option>${mkO(APOYO_OPTS(),'ap')}</select></div>
+      </div></td>`;
+    }
+  }
+  return`<td class="editable" onclick="activeCell={rowId:${rowId},field:'${field}'};render()"><div class="cell">${display||'<span class="hint">—</span>'}</div></td>`;
+}
+
+// ─── DETAIL ─────────────────────────────────────────────────────────────────
+function openDetail(id){
+  const r=DATA.find(x=>x.id===id); if(!r)return;
+  document.getElementById('d-title').textContent=r.proc;
+  document.getElementById('d-sub').textContent=r.emp+(r.tipo?' · '+r.tipo:'');
+  const steps=[
+    {l:'Acept. Propuesta',d:r.acep},
+    {l:'Lev. Perfil',d:r.lp},
+    {l:'Aprob. Perfil',d:r.apr},
+    {l:'Long List',d:r.ll},
+    {l:'Firma CO',d:r.fco},
+    {l:'Ingreso',d:r.fi},
+  ];
+  const lastDone=steps.reduce((a,s,i)=>s.d?i:a,-1);
+  let tlHTML=`<div class="tl-wrap"><div class="tl">`;
+  steps.forEach((s,i)=>{
+    const done=!!s.d, next=!done&&i===lastDone+1;
+    if(i>0) tlHTML+=`<div class="tl-line${i<=lastDone?' done':''}"></div>`;
+    tlHTML+=`<div class="tl-step"><div class="tl-dot${done?' done':next?' next':''}"></div><div class="tl-lbl">${s.l}</div><div class="tl-dt">${fmtDate(s.d)||'—'}</div></div>`;
+  });
+  tlHTML+=`</div></div>`;
+  const df=(lbl,val)=>`<div class="d-field"><label>${lbl}</label><span>${val||'—'}</span></div>`;
+  document.getElementById('d-body').innerHTML=`
+    <div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap">${etapaBadge(r.et,true)}<span class="badge ${r.st==='Activo'?'b-activo':'b-vacio'}">${r.st}</span>${r.rep==='SI'?'<span class="badge b-suspendido">Reposición</span>':''}</div>
+    ${tlHTML}
+    <div class="d-grid">${df('Consultora 1',r.c1?r.c1+' — '+CMAP(r.c1):null)}${df('Consultora 2',r.c2?r.c2+' — '+CMAP(r.c2):null)}${df('Apoyo',r.ap?r.ap+' — '+CMAP(r.ap):null)}</div>
+    ${r.cand?`<div class="cand-box"><label>Candidato seleccionado</label><span>${r.cand}</span></div>`:''}
+    ${r.dur&&r.dur<500?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Duración: <strong>${r.dur} días</strong>${r.mc?' · Cierre '+r.mc+'/'+r.ac:''}</div>`:''}
+    ${r.sp?`<div class="notes-box"><label>Notas</label><p>${r.sp}</p></div>`:''}
+  `;
+  document.getElementById('ov-detail').classList.add('open');
+}
+
+// ─── FILTER / SORT ──────────────────────────────────────────────────────────
+function getFiltered(){
+  const st=document.getElementById('f-status').value;
+  const et=document.getElementById('f-etapa').value;
+  const cons=document.getElementById('f-cons').value;
+  const rep=document.getElementById('f-rep').value;
+  const tipo=document.getElementById('f-tipo').value;
+  const q=document.getElementById('f-search').value.toLowerCase();
+  return DATA.filter(r=>{
+    if(st&&r.st!==st)return false;
+    if(et&&r.et!==et)return false;
+    if(cons&&r.c1!==cons&&r.c2!==cons&&r.ap!==cons)return false;
+    if(rep && (r.rep||'NO')!==rep) return false;
+    if(tipo && r.tipo!==tipo) return false;
+    if(q&&!r.emp.toLowerCase().includes(q)&&!r.proc.toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+function setTab(t,el){
+  curTab=t; document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('filter-bar').style.display=t==='procesos'?'flex':'none';
+  render();
+}
+function sortBy(col){if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}render();}
+
+// ─── RENDER PROCESOS ─────────────────────────────────────────────────────────
+function renderProcesos(){
+  const filtered=getFiltered();
+  document.getElementById('cnt').textContent=filtered.length+' procesos';
+  const dateCols=['acep','lp','apr','ll','fco','fi'];
+  const sorted=[...filtered].sort((a,b)=>{
+    let va=a[sortCol], vb=b[sortCol];
+    // Nulls always last regardless of direction
+    if(!va && !vb) return 0;
+    if(!va) return 1;
+    if(!vb) return -1;
+    if(typeof va==='string') va=va.toLowerCase(), vb=(vb||'').toLowerCase();
+    return va<vb?-sortDir:va>vb?sortDir:0;
+  });
+  if(!sorted.length)return`<div style="text-align:center;padding:48px;color:var(--text3)">Sin procesos con los filtros actuales</div>`;
+  const si=c=>c===sortCol?`<span class="si">${sortDir>0?'▲':'▼'}</span>`:'';
+  const rows=sorted.map(r=>{
+    const consActive=activeCell&&activeCell.rowId===r.id&&activeCell.field==='c1';
+    const consCell=consActive?makeCell(r.id,'c1','','cons'):
+      `<td class="editable" onclick="activeCell={rowId:${r.id},field:'c1'};render()"><div class="cell">${pills(r.c1,r.c2,r.ap)||'<span class="hint">—</span>'}</div></td>`;
+    return`<tr>
+      <td style="cursor:pointer" onclick="openDetail(${r.id})"><div class="cell"><strong>${r.emp}</strong></div></td>
+      <td style="cursor:pointer;max-width:280px" onclick="openDetail(${r.id})"><div class="cell" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:var(--text2)">${r.proc}</span></div></td>
+      ${consCell}
+      ${makeCell(r.id,'et',etapaBadge(r.et),'select',ETAPA_OPTS)}
+      ${makeCell(r.id,'acep',fmtDate(r.acep)?`<span style="font-size:11px">${fmtDate(r.acep)}</span>`:'','date')}
+      ${makeCell(r.id,'lp',fmtDate(r.lp)?`<span style="font-size:11px">${fmtDate(r.lp)}</span>`:'','date')}
+      ${makeCell(r.id,'apr',fmtDate(r.apr)?`<span style="font-size:11px">${fmtDate(r.apr)}</span>`:'','date')}
+      <td><div class="cell" style="padding:7px 6px"><span style="font-size:11px;color:${r.ll?'var(--accent)':'var(--text3)'}">${fmtDate(r.ll)||'Auto'}</span></div></td>
+      ${makeCell(r.id,'fco',fmtDate(r.fco)?`<span style="font-size:11px">${fmtDate(r.fco)}</span>`:'','date')}
+      ${makeCell(r.id,'cand',r.cand?`<span style="font-size:12px;color:var(--blue);font-weight:600">${r.cand}</span>`:'','text')}
+      ${makeCell(r.id,'sp',r.sp?`<span style="font-size:12px;color:var(--text2);display:block;white-space:normal;line-height:1.4">${r.sp}</span>`:'','text')}
+      <td><button class="del-btn" onclick="if(confirm('¿Eliminar este proceso?')){deleteFromSheets(${r.id});DATA=DATA.filter(x=>x.id!==${r.id});render();}" title="Eliminar">🗑</button></td>
+    </tr>`;
+  }).join('');
+  return`<div class="table-wrap"><table>
+    <thead><tr>
+      <th class="sort" onclick="sortBy('emp')">Empresa ${si('emp')}</th>
+      <th class="sort" onclick="sortBy('proc')" style="min-width:200px">Cargo ${si('proc')}</th>
+      <th class="sort" onclick="sortBy('c1')" style="min-width:120px">Consultoras ${si('c1')}</th>
+      <th class="sort" onclick="sortBy('et')" style="min-width:80px">Etapa ${si('et')}</th>
+      <th class="sort" onclick="sortBy('acep')" style="min-width:60px;font-size:10px">Acept. Prop. ${si('acep')}</th>
+      <th class="sort" onclick="sortBy('lp')" style="min-width:60px;font-size:10px">Lev. Perfil ${si('lp')}</th>
+      <th class="sort" onclick="sortBy('apr')" style="min-width:60px;font-size:10px">Aprob. Perfil ${si('apr')}</th>
+      <th class="sort" onclick="sortBy('ll')" style="min-width:60px;font-size:10px">Long List ${si('ll')}</th>
+      <th class="sort" onclick="sortBy('fco')" style="min-width:60px;font-size:10px">Firma CO ${si('fco')}</th>
+      <th class="sort" onclick="sortBy('cand')" style="min-width:90px">Candidato ${si('cand')}</th>
+      <th style="min-width:280px">Notas</th>
+      <th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+// ─── RENDER DASHBOARD ────────────────────────────────────────────────────────
+function renderCargas(){
+  // Activos = Status Activo (Inicio/Medio/Final/Esperando Aprobación)
+  const activos = DATA.filter(r => r.st === 'Activo');
+
+  // Multiplicadores por etapa (Esperando Aprobación cuenta como Inicio para ponderado)
+  const etMult = {Inicio:1.0, Medio:0.7, Final:0.2};
+
+  // Ponderado de una persona como consultora en un proceso
+  // Si hay 2 consultoras → divide por 2
+  function pondCons(r, k){
+    const mult = etMult[r.et] || 0;
+    const carga = calcCarga(r);
+    const hasTwoCons = !!(r.c1 && r.c2);
+    return carga * mult * (hasTwoCons ? 0.5 : 1.0);
+  }
+
+  // Ponderado de una persona como apoyo en un proceso
+  function pondApoyo(r){
+    const mult = etMult[r.et] || 0;
+    const carga = calcCarga(r);
+    return carga * mult;
+  }
+
+  // ── Calcular stats por persona ──────────────────────────────────────────
+  function statsForKey(k){
+    const EA = 'Esperando Aprobación';
+    const asCons  = activos.filter(r => (r.c1===k || r.c2===k) && r.et!==EA);
+    const asApoyo = activos.filter(r => r.ap===k && r.et!==EA);
+    const consPond  = asCons.reduce((a,r)  => a + pondCons(r,k), 0);
+    const apoyoPond = asApoyo.reduce((a,r) => a + pondApoyo(r), 0);
+    return {
+      consTot:  asCons.length,
+      apTot:    asApoyo.length,
+      consPond,
+      apoyoPond,
+      totalPond: consPond + apoyoPond,
+    };
+  }
+
+  // ── Tabla Consultoras ───────────────────────────────────────────────────
+  let totConsProc = 0, totConsPond = 0;
+  const consRows = CONSULTORAS.map(p => {
+    const s = statsForKey(p.k);
+    totConsProc += s.consTot;
+    totConsPond += s.consPond;
+    const cls = s.consPond>=6?'pond-hi':s.consPond>=3?'pond-md':'pond-lo';
+    return `<tr><td class="name">${p.k} — ${p.n}</td>
+      <td class="total">${s.consTot}</td>
+      <td class="total"><span class="${cls}">${s.consPond.toFixed(1)}</span></td>
+    </tr>`;
+  }).join('');
+  const totCls = totConsPond>=10?'pond-hi':totConsPond>=6?'pond-md':'pond-lo';
+
+  // ── Tabla Apoyos ────────────────────────────────────────────────────────
+  const uniqueApoyos = APOYOS.filter((v,i,a) => a.findIndex(x=>x.k===v.k)===i);
+  const apRows = uniqueApoyos.map(p => {
+    const s = statsForKey(p.k);
+    const cls = s.apoyoPond>=6?'pond-hi':s.apoyoPond>=3?'pond-md':'pond-lo';
+    return `<tr><td class="name">${p.k} — ${p.n}</td>
+      <td class="total">${s.apTot}</td>
+      <td class="total"><span class="${cls}">${s.apoyoPond.toFixed(1)}</span></td>
+    </tr>`;
+  }).join('');
+
+  // ── Tabla Combinada ─────────────────────────────────────────────────────
+  const allKeys = [...new Set([...CONSULTORAS.map(c=>c.k), ...APOYOS.map(a=>a.k)])];
+  const combiRows = allKeys.map(k => {
+    const s = statsForKey(k);
+    if(!s.consTot && !s.apTot) return '';
+    const nombre = [...CONSULTORAS,...APOYOS].find(x=>x.k===k)?.n || k;
+    const cls = s.totalPond>=6?'pond-hi':s.totalPond>=3?'pond-md':'pond-lo';
+    return `<tr><td class="name">${k} — ${nombre}</td>
+      <td class="total">${s.consTot}</td>
+      <td class="total">${s.apTot}</td>
+      <td class="total">${s.consTot + s.apTot}</td>
+      <td class="total"><span class="${cls}">${s.totalPond.toFixed(1)}</span></td>
+    </tr>`;
+  }).join('');
+
+  return`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+    <div>
+      <div class="sec">Consultoras</div>
+      <div class="ct-wrap"><table class="ct">
+        <thead><tr><th class="left">Nombre</th><th>Total proc.</th><th>Ponderado</th></tr></thead>
+        <tbody>${consRows}<tr class="total-row"><td class="name">Total</td><td class="total">${totConsProc}</td><td class="total"><span class="${totCls}">${totConsPond.toFixed(1)}</span></td></tr></tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="sec">Apoyos</div>
+      <div class="ct-wrap"><table class="ct">
+        <thead><tr><th class="left">Nombre</th><th>Total proc.</th><th>Ponderado</th></tr></thead>
+        <tbody>${apRows}</tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="sec">Resumen combinado (consultora + apoyo)</div>
+  <div class="ct-wrap"><table class="ct">
+    <thead><tr><th class="left">Nombre</th><th>Como consultora</th><th>Como apoyo</th><th>Total</th><th>Ponderado total</th></tr></thead>
+    <tbody>${combiRows}</tbody>
+  </table></div>
+  <div style="font-size:11px;color:var(--text3);margin-top:8px">
+    Ponderado: Inicio × 1.0 · Medio × 0.7 · Final × 0.2 · Carga Gerente × 1.25 · Si hay 2 consultoras el ponderado se divide en 2 · Esperando Aprobación se excluye
+  </div>`;
+}
+
+
+// ─── RENDER TIEMPOS ──────────────────────────────────────────────────────────
+// ─── TIEMPOS DATA ─────────────────────────────────────────────────────────────
+const T24=[{m:2,n:2,avg:35.5,min:26,max:45},{m:3,n:6,avg:43.3,min:18,max:61},{m:4,n:4,avg:42.8,min:21,max:66},{m:5,n:5,avg:83.2,min:58,max:120},{m:6,n:7,avg:56.9,min:26,max:84},{m:7,n:6,avg:75.7,min:30,max:132},{m:8,n:6,avg:67.5,min:28,max:216},{m:9,n:10,avg:70.6,min:42,max:172},{m:10,n:9,avg:77.9,min:32,max:182},{m:11,n:4,avg:67.5,min:11,max:168},{m:12,n:10,avg:67.7,min:32,max:120}];
+const T25=[{m:1,n:11,avg:74.8,min:16,max:212},{m:2,n:15,avg:66.8,min:18,max:217},{m:3,n:9,avg:131.6,min:50,max:308},{m:4,n:7,avg:104.9,min:15,max:367},{m:5,n:8,avg:67.9,min:27,max:134},{m:6,n:12,avg:76.4,min:37,max:151},{m:7,n:15,avg:75.9,min:16,max:142},{m:8,n:6,avg:46.5,min:22,max:91},{m:9,n:8,avg:60.9,min:14,max:120},{m:10,n:15,avg:98.3,min:21,max:259},{m:11,n:5,avg:118.0,min:95,max:128},{m:12,n:11,avg:74.5,min:32,max:145}];
+const T26=[{m:1,n:6,avg:65.0,min:38,max:116},{m:2,n:6,avg:94.8,min:40,max:195},{m:3,n:3,avg:94.7,min:60,max:133},{m:4,n:8,avg:89.2,min:43,max:181},{m:5,n:10,avg:66.7,min:18,max:131},{m:6,n:3,avg:81.7,min:45,max:134}];
+const RANGOS=[{r:"0–30 días",g:1,j:9,p:14,t:24},{r:"31–40 días",g:1,j:4,p:20,t:25},{r:"41–55 días",g:3,j:19,p:26,t:48},{r:"56–70 días",g:5,j:12,p:25,t:42},{r:"71–85 días",g:6,j:7,p:10,t:23},{r:"86–99 días",g:3,j:7,p:5,t:15},{r:"100+ días",g:14,j:22,p:25,t:62}];
+
+function renderTiempos(){
+  const tipo = document.getElementById('t-tipo') ? document.getElementById('t-tipo').value : '';
+  const cons = document.getElementById('t-cons') ? document.getElementById('t-cons').value : '';
+
+  // All unique consultoras from DATA for the dropdown
+  const allCons = [...new Set(DATA.filter(r=>r.c1).map(r=>r.c1))].sort();
+
+  // Filter cerrados with valid duration
+  const base = DATA.filter(r => r.et==='Cerrado' && r.dur && r.dur>0 && r.dur<500);
+  let rows = tipo ? base.filter(r => r.tipo===tipo) : base;
+  if(cons) rows = rows.filter(r => r.c1===cons || r.c2===cons);
+  // Fallback: derive mc/ac from the most relevant available date, so totals match the monthly breakdown
+  rows = rows.map(r=>{
+    if(r.mc && r.ac) return r;
+    const refDate = r.fi || r.fco || r.ll || r.apr || r.lp || r.acep;
+    if(!refDate) return r;
+    const dt = new Date(refDate);
+    return {...r, mc:dt.getMonth()+1, ac:dt.getFullYear()};
+  });
+
+  // Compute per-month stats dynamically
+  function byMonth(arr){
+    const map = {};
+    arr.forEach(r => {
+      if(!r.ac || !r.mc) return;
+      const k = `${r.ac}-${String(r.mc).padStart(2,'0')}`;
+      if(!map[k]) map[k]={m:r.mc,y:r.ac,durs:[]};
+      map[k].durs.push(r.dur);
+    });
+    return Object.entries(map).sort((a,b)=>a[0]>b[0]?1:-1).map(([k,v])=>({
+      m:v.m, y:v.y, n:v.durs.length,
+      avg: Math.round(v.durs.reduce((a,b)=>a+b,0)/v.durs.length),
+      min: Math.min(...v.durs),
+      max: Math.max(...v.durs),
+    }));
+  }
+
+  const all = byMonth(rows);
+  const by24 = all.filter(r=>r.y===2024);
+  const by25 = all.filter(r=>r.y===2025);
+  const by26 = all.filter(r=>r.y===2026);
+
+  function totAvg(arr){ const n=arr.reduce((a,t)=>a+t.n,0); return {n, avg:n?Math.round(arr.reduce((a,t)=>a+t.avg*t.n,0)/n):0, min:arr.length?Math.min(...arr.map(t=>t.min)):0, max:arr.length?Math.max(...arr.map(t=>t.max)):0}; }
+  const s24=totAvg(by24), s25=totAvg(by25), s26=totAvg(by26);
+
+  const maxAvg = Math.max(...all.map(t=>t.avg), 1);
+  function mkRows(arr){ return arr.map(t=>`<tr>
+    <td class="left">${MESES[t.m]}</td><td>${t.n}</td>
+    <td class="left" style="white-space:nowrap">${t.avg} días <span class="t-bar" style="width:${Math.round(t.avg/maxAvg*80)}px"></span></td>
+    <td style="color:var(--text2)">${t.min}</td><td style="color:var(--text2)">${t.max}</td>
+  </tr>`).join('')||'<tr><td colspan="5" style="color:var(--text3);padding:10px 8px">Sin datos</td></tr>'; }
+
+  // Rangos dinámicos
+  const rangos=[[0,30],[31,40],[41,55],[56,70],[71,85],[86,99],[100,9999]];
+  const tipoKeys = tipo ? [tipo] : ['Gerente','Jefatura','Profesional'];
+  const rangoRows = rangos.map(([lo,hi])=>{
+    const lbl = hi===9999?`${lo}+ días`:`${lo}–${hi} días`;
+    const cols = tipoKeys.map(t => rows.filter(r=>r.tipo===t&&r.dur>=lo&&r.dur<=hi).length);
+    const tot = rows.filter(r=>r.dur>=lo&&r.dur<=hi).length;
+    if(!tot) return '';
+    return `<tr><td class="left">${lbl}</td>${cols.map(c=>`<td>${c||'—'}</td>`).join('')}<td style="font-weight:600">${tot}</td></tr>`;
+  }).join('');
+  const colTots = tipoKeys.map(t=>rows.filter(r=>r.tipo===t).length);
+
+  const tipoLabel = tipo||'Todos';
+  const consOpts = allCons.map(c=>`<option value="${c}" ${c===cons?'selected':''}>${c} — ${CMAP(c)}</option>`).join('');
+
+  return`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+    <div class="sec" style="margin:0">Tipo</div>
+    <select id="t-tipo" onchange="render()" style="font-size:13px;padding:5px 9px;height:32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none">
+      <option value="" ${!tipo?'selected':''}>Todos los tipos</option>
+      <option value="Gerente" ${tipo==='Gerente'?'selected':''}>Gerente</option>
+      <option value="Jefatura" ${tipo==='Jefatura'?'selected':''}>Jefatura</option>
+      <option value="Profesional" ${tipo==='Profesional'?'selected':''}>Profesional</option>
+    </select>
+    <div class="sec" style="margin:0">Consultora</div>
+    <select id="t-cons" onchange="render()" style="font-size:13px;padding:5px 9px;height:32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none">
+      <option value="" ${!cons?'selected':''}>Todas las consultoras</option>
+      ${consOpts}
+    </select>
+    <span style="font-size:12px;color:var(--text3)">${rows.length} procesos cerrados</span>
+  </div>
+  <div class="metrics" style="margin-bottom:16px">
+    <div class="metric"><div class="metric-lbl">Promedio 2024</div><div class="metric-val">${s24.avg||'—'}<span style="font-size:14px;font-weight:400">${s24.avg?' días':''}</span></div><div class="metric-sub">${s24.n} cierres</div></div>
+    <div class="metric"><div class="metric-lbl">Promedio 2025</div><div class="metric-val">${s25.avg||'—'}<span style="font-size:14px;font-weight:400">${s25.avg?' días':''}</span></div><div class="metric-sub">${s25.n} cierres</div></div>
+    <div class="metric"><div class="metric-lbl">Promedio 2026</div><div class="metric-val">${s26.avg||'—'}<span style="font-size:14px;font-weight:400">${s26.avg?' días':''}</span></div><div class="metric-sub">${s26.n} cierres</div></div>
+    <div class="metric"><div class="metric-lbl">Total cierres</div><div class="metric-val">${rows.length}</div></div>
+    <div class="metric"><div class="metric-lbl">Duración mín.</div><div class="metric-val">${rows.length?Math.min(...rows.map(r=>r.dur)):'—'}<span style="font-size:14px;font-weight:400">${rows.length?' d':''}</span></div></div>
+    <div class="metric"><div class="metric-lbl">Duración máx.</div><div class="metric-val">${rows.length?Math.max(...rows.map(r=>r.dur)):'—'}<span style="font-size:14px;font-weight:400">${rows.length?' d':''}</span></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
+    <div><div class="sec">Por mes — 2024</div>
+    <div class="ct-wrap"><table class="t-table"><thead><tr><th class="left">Mes</th><th>N°</th><th class="left">Promedio</th><th>Mín</th><th>Máx</th></tr></thead>
+    <tbody>${mkRows(by24)}${s24.n?`<tr class="tot"><td class="left">Total</td><td>${s24.n}</td><td class="left">${s24.avg} días</td><td>${s24.min}</td><td>${s24.max}</td></tr>`:''}</tbody></table></div></div>
+    <div><div class="sec">Por mes — 2025</div>
+    <div class="ct-wrap"><table class="t-table"><thead><tr><th class="left">Mes</th><th>N°</th><th class="left">Promedio</th><th>Mín</th><th>Máx</th></tr></thead>
+    <tbody>${mkRows(by25)}${s25.n?`<tr class="tot"><td class="left">Total</td><td>${s25.n}</td><td class="left">${s25.avg} días</td><td>${s25.min}</td><td>${s25.max}</td></tr>`:''}</tbody></table></div></div>
+    <div><div class="sec">Por mes — 2026</div>
+    <div class="ct-wrap"><table class="t-table"><thead><tr><th class="left">Mes</th><th>N°</th><th class="left">Promedio</th><th>Mín</th><th>Máx</th></tr></thead>
+    <tbody>${mkRows(by26)}${s26.n?`<tr class="tot"><td class="left">Total</td><td>${s26.n}</td><td class="left">${s26.avg} días</td><td>${s26.min}</td><td>${s26.max}</td></tr>`:''}</tbody></table></div></div>
+  </div>
+  <div class="sec">Distribución por rango de duración — ${tipoLabel}${cons?' · '+cons:''}</div>
+  <div class="ct-wrap"><table class="t-table" style="max-width:560px">
+    <thead><tr><th class="left">Rango</th>${tipoKeys.map(t=>`<th>${t}</th>`).join('')}<th>Total</th></tr></thead>
+    <tbody>${rangoRows}
+    <tr class="tot"><td class="left">Total</td>${colTots.map(c=>`<td>${c}</td>`).join('')}<td>${rows.length}</td></tr></tbody>
+  </table></div>`;
+}
+
+
+function openSettings(){
+  renderTags();
+  document.getElementById('ov-settings').classList.add('open');
+}
+function renderTags(){
+  document.getElementById('tag-cons').innerHTML=CONSULTORAS.map((p,i)=>
+    `<div class="tag-item">${p.k} — ${p.n}<button class="tag-del" onclick="CONSULTORAS.splice(${i},1);renderTags()">×</button></div>`
+  ).join('');
+  document.getElementById('tag-ap').innerHTML=APOYOS.map((p,i)=>
+    `<div class="tag-item">${p.k} — ${p.n}<button class="tag-del" onclick="APOYOS.splice(${i},1);renderTags()">×</button></div>`
+  ).join('');
+}
+function addPerson(type){
+  const keyId=type==='cons'?'new-cons-key':'new-ap-key';
+  const nameId=type==='cons'?'new-cons-name':'new-ap-name';
+  const k=document.getElementById(keyId).value.trim();
+  const n=document.getElementById(nameId).value.trim();
+  if(!k||!n){alert('Ingresa sigla y nombre.');return;}
+  if(type==='cons') CONSULTORAS.push({k,n});
+  else APOYOS.push({k,n});
+  document.getElementById(keyId).value='';
+  document.getElementById(nameId).value='';
+  renderTags();
+}
+
+// ─── MAIN RENDER ─────────────────────────────────────────────────────────────
+let cierreSortCol='fco', cierreSortDir=-1;
+function sortCierreBy(col){
+  if(cierreSortCol===col) cierreSortDir*=-1; else {cierreSortCol=col; cierreSortDir=1;}
+  render();
+}
+function renderCierres(){
+  const today = new Date();
+  const q = (document.getElementById('c-search') ? document.getElementById('c-search').value : '').toLowerCase();
+  let cierres = DATA.filter(r => r.et==='Cerrado');
+  if(q) cierres = cierres.filter(r => r.emp.toLowerCase().includes(q) || r.proc.toLowerCase().includes(q) || (r.cand||'').toLowerCase().includes(q));
+
+  cierres = cierres.map(r=>{
+    let dias = null;
+    if(r.fi){
+      const d = Math.round((today - new Date(r.fi)) / 86400000);
+      dias = (d >= -3650 && d <= 3650) ? d : null; // guard against malformed dates
+    }
+    return {...r, diasDesdeIngreso: dias};
+  });
+
+  const inRange = r => r.diasDesdeIngreso!==null && r.diasDesdeIngreso>=80 && r.diasDesdeIngreso<=100;
+  const missingDates = r => !r.fco && !r.fi;
+  const sorted = [...cierres].sort((a,b)=>{
+    // Only the 80-100 days range is pinned to top; missing-dates rows sort normally (just highlighted red)
+    const aHi = inRange(a), bHi = inRange(b);
+    if(aHi && !bHi) return -1;
+    if(!aHi && bHi) return 1;
+    let va, vb;
+    if(cierreSortCol==='diasDesdeIngreso'){ va=a.diasDesdeIngreso; vb=b.diasDesdeIngreso; }
+    else { va=a[cierreSortCol]; vb=b[cierreSortCol]; }
+    if(va===null||va===undefined||va==='') return 1;
+    if(vb===null||vb===undefined||vb==='') return -1;
+    if(typeof va==='string'){ va=va.toLowerCase(); vb=(vb||'').toLowerCase(); }
+    return va<vb?-cierreSortDir:va>vb?cierreSortDir:0;
+  });
+
+  const si = c => c===cierreSortCol?`<span class="si">${cierreSortDir>0?'▲':'▼'}</span>`:'';
+
+  const searchBar = `<div class="filters" style="padding:0 0 14px 0;border:none">
+    <input type="text" id="c-search" placeholder="Buscar empresa, cargo o candidato..." oninput="render()" value="${q.replace(/"/g,'&quot;')}" style="flex:1;min-width:140px;max-width:320px;font-size:13px;padding:5px 9px;height:32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none">
+    <span class="cnt">${sorted.length} procesos cerrados</span>
+  </div>`;
+
+  if(!sorted.length) return searchBar + `<div style="text-align:center;padding:48px;color:var(--text3)">No hay procesos cerrados con los filtros actuales</div>`;
+
+  const rows = sorted.map(r=>{
+    const hi = inRange(r);
+    const miss = missingDates(r);
+    const rowStyle = miss ? ' style="background:var(--red-bg)"' : hi ? ' style="background:var(--amber-bg)"' : '';
+    const alertIcon = miss ? '<span title="Falta Firma CO y Fecha de Ingreso" style="color:var(--red);margin-right:5px;font-weight:700">⚠</span>' : '';
+    return `<tr${rowStyle}>
+    <td style="cursor:pointer" onclick="openDetail(${r.id})"><div class="cell">${alertIcon}<strong>${r.emp}</strong></div></td>
+    <td style="cursor:pointer" onclick="openDetail(${r.id})"><div class="cell" style="color:var(--text2)">${r.proc}</div></td>
+    <td><div class="cell"><span style="color:var(--blue);font-weight:600">${r.cand||'<span class="hint">—</span>'}</span></div></td>
+    <td><div class="cell">${fmtDate(r.fco)||(miss?'<span style="color:var(--red);font-weight:600">Falta</span>':'<span class="hint">—</span>')}</div></td>
+    <td><div class="cell">${fmtDate(r.fi)||(miss?'<span style="color:var(--red);font-weight:600">Falta</span>':'<span class="hint">—</span>')}</div></td>
+    <td><div class="cell">${r.diasDesdeIngreso!==null?r.diasDesdeIngreso+' días':'<span class="hint">—</span>'}</div></td>
+    <td><div class="cell">${hi?'<span class="badge b-aprobacion">Contactar</span>':''}</div></td>
+  </tr>`;
+  }).join('');
+
+  return searchBar + `<div class="table-wrap"><table>
+    <thead><tr>
+      <th class="sort" onclick="sortCierreBy('emp')">Empresa ${si('emp')}</th>
+      <th class="sort" onclick="sortCierreBy('proc')">Cargo ${si('proc')}</th>
+      <th class="sort" onclick="sortCierreBy('cand')">Candidato ${si('cand')}</th>
+      <th class="sort" onclick="sortCierreBy('fco')">Fecha cierre (Firma CO) ${si('fco')}</th>
+      <th class="sort" onclick="sortCierreBy('fi')">Fecha Ingreso ${si('fi')}</th>
+      <th class="sort" onclick="sortCierreBy('diasDesdeIngreso')">Días desde ingreso ${si('diasDesdeIngreso')}</th>
+      <th>Contactar</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function render(){
+  const c=document.getElementById('main-content');
+  if(curTab==='procesos') c.innerHTML=renderProcesos();
+
+  else if(curTab==='cargas') c.innerHTML=renderCargas();
+  else if(curTab==='tiempos') c.innerHTML=renderTiempos();
+  else if(curTab==='cierres') c.innerHTML=renderCierres();
+  if(activeCell){
+    const el=document.getElementById(`ci-${activeCell.rowId}-${activeCell.field}`);
+    if(el){el.focus();if(el.select)el.select();}
+  }
+}
+
+// ─── NEW / CLOSE ─────────────────────────────────────────────────────────────
+function openNew(){document.getElementById('ov-new').classList.add('open');}
+function closeNew(){document.getElementById('ov-new').classList.remove('open');}
+function saveNew(){
+  const emp=document.getElementById('n-emp').value.trim();
+  const proc=document.getElementById('n-proc').value.trim();
+  if(!emp||!proc){alert('Empresa y cargo son obligatorios.');return;}
+  const tipo=document.getElementById('n-tipo').value;
+  const rep=document.getElementById('n-rep').value;
+  DATA.push({id:nextId++,emp,proc,tipo,c1:document.getElementById('n-c1').value,c2:document.getElementById('n-c2').value,ap:document.getElementById('n-ap').value,st:'Activo',et:document.getElementById('n-et').value,rep,acep:null,lp:null,apr:null,ll:null,fco:null,fi:null,cand:'',sp:'',dur:null,mc:null,ac:null});
+  closeNew();
+  saveToSheets(DATA[DATA.length-1]); // Save new record to Sheets
+  ['n-emp','n-proc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('n-rep').value='NO';
+  ['n-tipo','n-c1','n-c2','n-ap','n-et'].forEach(id=>document.getElementById(id).value='');
+  initSelects();render();
+}
+
+// Close overlays on bg click
+['ov-new','ov-detail','ov-settings','ov-edit'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))document.getElementById(id).classList.remove('open');});
+});
+
+
+// ─── PERSISTENCIA — Google Sheets Backend ─────────────────────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1w10s6zmnZAPXvhLGNKwTiAc9brrzZHX2eiV9qbRYIuh3pFtxxO6NJlGmJaJTIvEz/exec';
+let isSaving = false;
+
+function showStatus(msg, type='info') {
+  let bar = document.getElementById('status-bar');
+  if (!bar) return;
+  bar.textContent = msg;
+  bar.style.background = type==='error' ? '#FAE5E5' : type==='ok' ? '#E5F4EE' : '#FDF0D8';
+  bar.style.color = type==='error' ? '#8F1A1A' : type==='ok' ? '#0F6E56' : '#7A4F0A';
+  bar.style.display = 'block';
+  if (type !== 'loading') setTimeout(() => bar.style.display='none', 3000);
+}
+
+async function loadFromSheets() {
+  showStatus('Cargando datos desde Google Sheets...', 'loading');
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=getAll');
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+
+    // Convert sheet records to app format
+    DATA = json.records.map(r => ({
+      id: Number(r.id),
+      emp: r.Empresa || '',
+      proc: r.Cargo || '',
+      tipo: r.Tipo || '',
+      n: r.N ? Number(r.N) : null,
+      c1: r.Consultora1 || '',
+      c2: r.Consultora2 || '',
+      ap: r.Apoyo || '',
+      st: r.Status || 'Activo',
+      et: r.Etapa || '',
+      rep: r.Reposicion || '',
+      acep: r.AceptacionPropuesta || null,
+      lp: r.LevantamientoPerfil || null,
+      apr: r.AprobacionPerfil || null,
+      ll: r.LongList || null,
+      fco: r.FirmaCO || null,
+      fi: r.FechaIngreso || null,
+      cand: r.CandidatoSeleccionado || '',
+      sp: r.Notas || '',
+      dur: r.Duracion ? Number(r.Duracion) : null,
+      mc: r.MesCierre ? Number(r.MesCierre) : null,
+      ac: r.AnioCierre ? Number(r.AnioCierre) : null,
+    }));
+
+    nextId = Math.max(...DATA.map(r => r.id), 0) + 1;
+    initSelects();
+    render();
+    showStatus('Datos cargados ✓', 'ok');
+  } catch(err) {
+    showStatus('Error cargando datos: ' + err.message, 'error');
+    console.error(err);
+    // Fall back to embedded data
+    initSelects();
+    render();
+  }
+}
+
+async function saveToSheets(record) {
+  isSaving = true;
+  showStatus('Guardando...', 'loading');
+  try {
+    // Convert app record to sheet format
+    const sheetRecord = {
+      id: record.id,
+      Empresa: record.emp,
+      Cargo: record.proc,
+      Tipo: record.tipo,
+      N: record.n || '',
+      Consultora1: record.c1,
+      Consultora2: record.c2,
+      Apoyo: record.ap,
+      Status: record.st,
+      Etapa: record.et,
+      Reposicion: record.rep,
+      AceptacionPropuesta: record.acep || '',
+      LevantamientoPerfil: record.lp || '',
+      AprobacionPerfil: record.apr || '',
+      LongList: record.ll || '',
+      FirmaCO: record.fco || '',
+      FechaIngreso: record.fi || '',
+      CandidatoSeleccionado: record.cand,
+      Notas: record.sp,
+      Duracion: record.dur || '',
+      MesCierre: record.mc || '',
+      AnioCierre: record.ac || '',
+    };
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'save', record: sheetRecord }),
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+    showStatus('Guardado ✓', 'ok');
+  } catch(err) {
+    showStatus('Error al guardar: ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    isSaving = false;
+  }
+}
+
+async function deleteFromSheets(id) {
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', id }),
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+  } catch(err) {
+    showStatus('Error al eliminar: ' + err.message, 'error');
+    console.error(err);
+  }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadFromSheets(); // Carga desde Google Sheets al abrir
+</script>
+</body>
+</html>

@@ -233,6 +233,10 @@ tr:hover .del-btn{opacity:1}
   <input type="text" id="f-search" placeholder="Buscar empresa o cargo..." oninput="render()" style="flex:1;min-width:140px;max-width:280px">
   <span class="cnt" id="cnt"></span>
 </div>
+<div id="cierres-bar" style="display:none;background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:none;gap:8px;align-items:center">
+  <input type="text" id="c-search" placeholder="Buscar empresa, cargo o candidato..." oninput="render()" style="min-width:240px;max-width:380px;font-size:13px;padding:5px 9px;height:32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none">
+  <span style="font-size:12px;color:var(--text3)" id="c-cnt"></span>
+</div>
 
 <div id="main-content" class="content"></div>
 
@@ -942,6 +946,8 @@ function setTab(t,el){
   curTab=t; document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   if(el)el.classList.add('active');
   document.getElementById('filter-bar').style.display=t==='procesos'?'flex':'none';
+  document.getElementById('cierres-bar').style.display=t==='cierres'?'flex':'none';
+  if(t==='cierres') setTimeout(()=>{ const el=document.getElementById('c-search'); if(el) el.focus(); },50);
   render();
 }
 function sortBy(col){if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}render();}
@@ -1290,12 +1296,12 @@ function renderCierres(){
 
   const si = c => c===cierreSortCol?`<span class="si">${cierreSortDir>0?'▲':'▼'}</span>`:'';
 
-  const searchBar = `<div class="filters" style="padding:0 0 14px 0;border:none">
-    <input type="text" id="c-search" placeholder="Buscar empresa, cargo o candidato..." oninput="render()" value="${q.replace(/"/g,'&quot;')}" style="flex:1;min-width:140px;max-width:320px;font-size:13px;padding:5px 9px;height:32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none">
-    <span class="cnt">${sorted.length} procesos cerrados</span>
-  </div>`;
+  // Update count badge in the fixed cierres bar
+  const cntEl = document.getElementById('c-cnt');
+  if(cntEl) cntEl.textContent = sorted.length + ' procesos cerrados';
+  const searchBar = ''; // Search bar is now in the fixed bar above
 
-  if(!sorted.length) return searchBar + `<div style="text-align:center;padding:48px;color:var(--text3)">No hay procesos cerrados con los filtros actuales</div>`;
+  if(!sorted.length) return `<div style="text-align:center;padding:48px;color:var(--text3)">No hay procesos cerrados con los filtros actuales</div>`;
 
   const rows = sorted.map(r=>{
     const hi = inRange(r);
@@ -1313,7 +1319,7 @@ function renderCierres(){
   </tr>`;
   }).join('');
 
-  return searchBar + `<div class="table-wrap"><table>
+  return `<div class="table-wrap"><table>
     <thead><tr>
       <th class="sort" onclick="sortCierreBy('emp')">Empresa ${si('emp')}</th>
       <th class="sort" onclick="sortCierreBy('proc')">Cargo ${si('proc')}</th>

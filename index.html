@@ -798,7 +798,8 @@ function initSelects(){
   fillSel('n-c1',CONS_OPTS()); fillSel('n-c2',CONS_OPTS()); fillSel('n-ap',APOYO_OPTS());
   const fe=document.getElementById('f-etapa');
   while(fe.options.length>1)fe.remove(1);
-  [...new Set(DATA.map(r=>r.et).filter(Boolean))].sort().forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;fe.appendChild(o);});
+  // Use fixed list so all etapas appear even if no records exist yet
+  ['Esperando Aprobación','Stand By','Inicio','Medio','Final','Cerrado','Suspendido'].forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;fe.appendChild(o);});
   const fc=document.getElementById('f-cons');
   while(fc.options.length>1)fc.remove(1);
   [...new Set([...CONS_OPTS(),...APOYO_OPTS()])].sort().forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=`${k} — ${CMAP(k)}`;fc.appendChild(o);});
@@ -1146,9 +1147,13 @@ function renderTiempos(){
   function byMonth(arr){
     const map = {};
     arr.forEach(r => {
-      if(!r.ac || !r.mc) return;
-      const k = `${r.ac}-${String(r.mc).padStart(2,'0')}`;
-      if(!map[k]) map[k]={m:r.mc,y:r.ac,durs:[]};
+      // Use Firma CO date as the month of closure
+      const refDate = r.fco || null;
+      if(!refDate) return;
+      const dt = new Date(refDate);
+      const y = dt.getFullYear(), m = dt.getMonth()+1;
+      const k = `${y}-${String(m).padStart(2,'0')}`;
+      if(!map[k]) map[k]={m, y, durs:[]};
       map[k].durs.push(r.dur);
     });
     return Object.entries(map).sort((a,b)=>a[0]>b[0]?1:-1).map(([k,v])=>({

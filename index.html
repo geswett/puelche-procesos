@@ -253,7 +253,7 @@ tr:hover .del-btn{opacity:1}
   <div class="nf"><label>Consultora 2 (opcional)</label><select id="n-c2"><option value="">— Sin segunda —</option></select></div>
   <div class="nf"><label>Apoyo</label><select id="n-ap"><option value="">— Sin apoyo —</option></select></div>
   <div class="nf"><label>Etapa</label>
-    <select id="n-et"><option value="">— Sin etapa —</option><option value="Esperando Aprobación">Esperando Aprobación</option><option value="Inicio">Inicio</option><option value="Medio">Medio</option><option value="Final">Final</option></select>
+    <select id="n-et"><option value="">— Sin etapa —</option><option value="Esperando Aprobación">Esperando Aprobación</option><option value="Stand By">Stand By</option><option value="Inicio">Inicio</option><option value="Medio">Medio</option><option value="Final">Final</option></select>
   </div>
   <div class="nf"><label>¿Es reposición?</label>
     <select id="n-rep"><option value="NO" selected>No</option><option value="SI">Sí</option></select>
@@ -777,14 +777,14 @@ function fmtDate(d){
   try{const p=d.split('-');return`${p[2]}/${p[1]}/${p[0].slice(2)}`;}catch{return '';}
 }
 function etapaBadge(et, full){
-  const m={Cerrado:'b-cerrado',Suspendido:'b-suspendido',Inicio:'b-inicio',Medio:'b-medio',Final:'b-final','Esperando Aprobación':'b-aprobacion'};
-  const label = (et==='Esperando Aprobación' && !full) ? 'Esp. Aprob.' : (et||'—');
+  const m={Cerrado:'b-cerrado',Suspendido:'b-suspendido',Inicio:'b-inicio',Medio:'b-medio',Final:'b-final','Esperando Aprobación':'b-aprobacion','Stand By':'b-aprobacion'};
+  const label = (et==='Esperando Aprobación' && !full) ? 'Esp. Aprob.' : (et==='Stand By' && !full) ? 'Stand By' : (et||'—');
   return`<span class="badge ${m[et]||'b-vacio'}">${label}</span>`;
 }
 function pills(c1,c2,ap){
   return(c1?`<span class="cons-pill">${c1}</span>`:'')+(c2?`<span class="cons-pill">${c2}</span>`:'')+(ap?`<span class="cons-pill ap">${ap}</span>`:'');
 }
-const ETAPA_OPTS=['','Esperando Aprobación','Inicio','Medio','Final','Cerrado','Suspendido'];
+const ETAPA_OPTS=['','Esperando Aprobación','Stand By','Inicio','Medio','Final','Cerrado','Suspendido'];
 const TIPO_OPTS=['','Gerente','Jefatura','Profesional'];
 const MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -810,7 +810,7 @@ function commitCell(rowId,field,value){
   r[field]=value;
   // Auto-update Status based on Etapa
   if(field==='et'){
-    const ACTIVAS=['Inicio','Medio','Final','Esperando Aprobación'];
+    const ACTIVAS=['Inicio','Medio','Final','Esperando Aprobación','Stand By'];
     r.st = ACTIVAS.includes(value) ? 'Activo' : 'Inactivo';
     if(value==='Cerrado'){
       activeCell=null;
@@ -1033,6 +1033,7 @@ function renderCargas(){
   // ── Calcular stats por persona ──────────────────────────────────────────
   function statsForKey(k){
     const EA = 'Esperando Aprobación';
+    const SB = 'Stand By';
     const asCons  = activos.filter(r => (r.c1===k || r.c2===k) && r.et!==EA);
     const asApoyo = activos.filter(r => r.ap===k && r.et!==EA);
     const consPond  = asCons.reduce((a,r)  => a + pondCons(r,k), 0);

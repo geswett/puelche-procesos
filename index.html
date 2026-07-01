@@ -90,8 +90,8 @@ tr:hover td{background:#FAFAF8}
 .b-aprobacion{background:var(--amber-bg);color:var(--amber)}
 .b-vacio{background:var(--surface2);color:var(--text3)}
 .b-activo{background:var(--accent-bg);color:var(--accent)}
-.cons-pill{display:inline-flex;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:600;margin:1px;background:var(--surface2);border:1px solid var(--border);color:var(--text)}
-.cons-pill.ap{opacity:.7}
+.cons-pill{display:inline-flex;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:600;margin:1px;background:#E8F5F0;border:1px solid #A8D8C8;color:#1A6B53}
+.cons-pill.ap{background:#FEF3E2;border:1px solid #F5C97A;color:#8A5C00}
 .hint{font-size:12px;color:var(--text3)}
 .del-btn{opacity:0;transition:opacity .15s;background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:3px 6px;border-radius:4px}
 .del-btn:hover{color:var(--red);background:var(--red-bg)}
@@ -1035,9 +1035,10 @@ function renderCargas(){
   function statsForKey(k){
     const EA = 'Esperando Aprobación';
     const SB = 'Stand By';
-    const asCons  = activos.filter(r => (r.c1===k || r.c2===k) && r.et!==EA);
-    const asApoyo = activos.filter(r => r.ap===k && r.et!==EA);
-    const consPond  = asCons.reduce((a,r)  => a + pondCons(r,k), 0);
+    // Exclude EA and SB from both count and ponderado
+    const asCons  = activos.filter(r => (r.c1===k || r.c2===k) && r.et!==EA && r.et!==SB);
+    const asApoyo = activos.filter(r => r.ap===k && r.et!==EA && r.et!==SB);
+    const consPond  = asCons.reduce((a,r) => a + pondCons(r,k), 0);
     const apoyoPond = asApoyo.reduce((a,r) => a + pondApoyo(r), 0);
     return {
       consTot:  asCons.length,
@@ -1049,10 +1050,13 @@ function renderCargas(){
   }
 
   // ── Tabla Consultoras ───────────────────────────────────────────────────
-  let totConsProc = 0, totConsPond = 0;
+  // Total único = procesos activos con al menos una consultora asignada
+  const EA_SB = ['Esperando Aprobación','Stand By'];
+  const totConsProcUniq = activos.filter(r => (r.c1 || r.c2) && !EA_SB.includes(r.et)).length;
+  let totConsPond = 0;
   const consRows = CONSULTORAS.map(p => {
     const s = statsForKey(p.k);
-    totConsProc += s.consTot;
+    if(!s.consTot) return ''; // ocultar si no tiene procesos activos
     totConsPond += s.consPond;
     const cls = s.consPond>=6?'pond-hi':s.consPond>=3?'pond-md':'pond-lo';
     return `<tr><td class="name">${p.k} — ${p.n}</td>
@@ -1064,20 +1068,28 @@ function renderCargas(){
 
   // ── Tabla Apoyos ────────────────────────────────────────────────────────
   const uniqueApoyos = APOYOS.filter((v,i,a) => a.findIndex(x=>x.k===v.k)===i);
+  const totApProcUniq = activos.filter(r => r.ap && !EA_SB.includes(r.et)).length;
+  let totApPond = 0;
   const apRows = uniqueApoyos.map(p => {
     const s = statsForKey(p.k);
+    if(!s.apTot) return ''; // ocultar si no tiene procesos activos
+    totApPond += s.apoyoPond;
     const cls = s.apoyoPond>=6?'pond-hi':s.apoyoPond>=3?'pond-md':'pond-lo';
     return `<tr><td class="name">${p.k} — ${p.n}</td>
       <td class="total">${s.apTot}</td>
       <td class="total"><span class="${cls}">${s.apoyoPond.toFixed(1)}</span></td>
     </tr>`;
   }).join('');
+  const totApCls = totApPond>=10?'pond-hi':totApPond>=6?'pond-md':'pond-lo';
 
   // ── Tabla Combinada ─────────────────────────────────────────────────────
   const allKeys = [...new Set([...CONSULTORAS.map(c=>c.k), ...APOYOS.map(a=>a.k)])];
+  let totCombiProc = 0, totCombiPond = 0;
   const combiRows = allKeys.map(k => {
     const s = statsForKey(k);
-    if(!s.consTot && !s.apTot) return '';
+    if(!s.consTot && !s.apTot) return ''; // ocultar si no tiene procesos activos
+    totCombiProc += s.consTot + s.apTot;
+    totCombiPond += s.totalPond;
     const nombre = [...CONSULTORAS,...APOYOS].find(x=>x.k===k)?.n || k;
     const cls = s.totalPond>=6?'pond-hi':s.totalPond>=3?'pond-md':'pond-lo';
     return `<tr><td class="name">${k} — ${nombre}</td>
@@ -1087,6 +1099,7 @@ function renderCargas(){
       <td class="total"><span class="${cls}">${s.totalPond.toFixed(1)}</span></td>
     </tr>`;
   }).join('');
+  const totCombiCls = totCombiPond>=10?'pond-hi':totCombiPond>=6?'pond-md':'pond-lo';
 
   return`
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
@@ -1094,14 +1107,14 @@ function renderCargas(){
       <div class="sec">Consultoras</div>
       <div class="ct-wrap"><table class="ct">
         <thead><tr><th class="left">Nombre</th><th>Total proc.</th><th>Ponderado</th></tr></thead>
-        <tbody>${consRows}<tr class="total-row"><td class="name">Total</td><td class="total">${totConsProc}</td><td class="total"><span class="${totCls}">${totConsPond.toFixed(1)}</span></td></tr></tbody>
+        <tbody>${consRows}<tr class="total-row"><td class="name">Total</td><td class="total">${totConsProcUniq}</td><td class="total"><span class="${totCls}">${totConsPond.toFixed(1)}</span></td></tr></tbody>
       </table></div>
     </div>
     <div>
       <div class="sec">Apoyos</div>
       <div class="ct-wrap"><table class="ct">
         <thead><tr><th class="left">Nombre</th><th>Total proc.</th><th>Ponderado</th></tr></thead>
-        <tbody>${apRows}</tbody>
+        <tbody>${apRows}<tr class="total-row"><td class="name">Total</td><td class="total">${totApProcUniq}</td><td class="total"><span class="${totApCls}">${totApPond.toFixed(1)}</span></td></tr></tbody>
       </table></div>
     </div>
   </div>
@@ -1111,7 +1124,7 @@ function renderCargas(){
     <tbody>${combiRows}</tbody>
   </table></div>
   <div style="font-size:11px;color:var(--text3);margin-top:8px">
-    Ponderado: Inicio × 1.0 · Medio × 0.7 · Final × 0.2 · Carga Gerente × 1.25 · Si hay 2 consultoras el ponderado se divide en 2 · Esperando Aprobación se excluye
+    Ponderado: Inicio × 1.0 · Medio × 0.7 · Final × 0.2 · Carga Gerente × 1.25 · Si hay 2 consultoras el ponderado se divide en 2 · Esperando Aprobación y Stand By se excluyen
   </div>`;
 }
 

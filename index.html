@@ -869,7 +869,7 @@ function makeCell(rowId,field,display,editType,opts=null){
   if(isActive){
     if(editType==='text'){
       const val=(r[field]||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-      return`<td><div class="cell"><input class="cell-input" value="${val}" id="ci-${rowId}-${field}" onblur="commitCell(${rowId},'${field}',this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){activeCell=null;render();}"></div></td>`;
+      return`<td><div class="cell"><input class="cell-input" value="${val}" id="ci-${rowId}-${field}" onkeydown="if(event.key==='Enter'){commitCell(${rowId},'${field}',this.value);}if(event.key==='Escape'){activeCell=null;render();}"></div></td>`;
     }
     if(editType==='date'){
       const val=r[field]||'';
@@ -878,7 +878,7 @@ function makeCell(rowId,field,display,editType,opts=null){
     if(editType==='select'){
       const val=r[field]||'';
       const oh=opts.map(o=>`<option value="${o}"${o===val?' selected':''}>${o||'—'}</option>`).join('');
-      return`<td><div class="cell"><select class="cell-select" id="ci-${rowId}-${field}" onchange="commitCell(${rowId},'${field}',this.value)" onblur="setTimeout(()=>{if(activeCell){activeCell=null;render();}},120)" onkeydown="if(event.key==='Escape'){activeCell=null;render();}">${oh}</select></div></td>`;
+      return`<td><div class="cell"><select class="cell-select" id="ci-${rowId}-${field}" onchange="commitCell(${rowId},'${field}',this.value)"  onkeydown="if(event.key==='Escape'){activeCell=null;render();}">${oh}</select></div></td>`;
     }
     if(editType==='cons'){
       const mkO=(arr,f2)=>arr.map(o=>`<option value="${o}"${o===(r[f2]||'')?' selected':''}>${o} — ${CMAP(o)}</option>`).join('');
@@ -1140,30 +1140,24 @@ function renderTiempos(){
   const tipo = document.getElementById('t-tipo') ? document.getElementById('t-tipo').value : '';
   const cons = document.getElementById('t-cons') ? document.getElementById('t-cons').value : '';
 
-  // All unique consultoras from DATA for the dropdown
   const allCons = [...new Set(DATA.filter(r=>r.c1).map(r=>r.c1))].sort();
 
-  // Filter cerrados with valid duration
   const base = DATA.filter(r => r.et==='Cerrado' && r.dur && r.dur>0 && r.dur<500);
   let rows = tipo ? base.filter(r => r.tipo===tipo) : base;
   if(cons) rows = rows.filter(r => r.c1===cons || r.c2===cons);
-  // Fallback: derive mc/ac from the most relevant available date, so totals match the monthly breakdown
+
   rows = rows.map(r=>{
-    if(r.mc && r.ac) return r;
-    const refDate = r.fi || r.fco || r.ll || r.apr || r.lp || r.acep;
+    if(r.fco) return r;
+    const refDate = r.fi || r.ll || r.apr || r.lp || r.acep;
     if(!refDate) return r;
-    const dt = new Date(refDate);
-    return {...r, mc:dt.getMonth()+1, ac:dt.getFullYear()};
+    return {...r, fco: refDate};
   });
 
-  // Compute per-month stats dynamically
   function byMonth(arr){
     const map = {};
     arr.forEach(r => {
-      // Use Firma CO date as the month of closure
-      const refDate = r.fco || null;
-      if(!refDate) return;
-      const dt = new Date(refDate);
+      if(!r.fco) return;
+      const dt = new Date(r.fco);
       const y = dt.getFullYear(), m = dt.getMonth()+1;
       const k = `${y}-${String(m).padStart(2,'0')}`;
       if(!map[k]) map[k]={m, y, durs:[]};
@@ -1172,35 +1166,46 @@ function renderTiempos(){
     return Object.entries(map).sort((a,b)=>a[0]>b[0]?1:-1).map(([k,v])=>({
       m:v.m, y:v.y, n:v.durs.length,
       avg: Math.round(v.durs.reduce((a,b)=>a+b,0)/v.durs.length),
-      min: Math.min(...v.durs),
-      max: Math.max(...v.durs),
+      min: Math.min(...v.durs), max: Math.max(...v.durs),
     }));
   }
 
   const all = byMonth(rows);
-  const by24 = all.filter(r=>r.y===2024);
-  const by25 = all.filter(r=>r.y===2025);
-  const by26 = all.filter(r=>r.y===2026);
+  const curYear = new Date().getFullYear();
+  const prevYear = curYear - 1;
 
-  function totAvg(arr){ const n=arr.reduce((a,t)=>a+t.n,0); return {n, avg:n?Math.round(arr.reduce((a,t)=>a+t.avg*t.n,0)/n):0, min:arr.length?Math.min(...arr.map(t=>t.min)):0, max:arr.length?Math.max(...arr.map(t=>t.max)):0}; }
-  const s24=totAvg(by24), s25=totAvg(by25), s26=totAvg(by26);
+  const byCur  = all.filter(t=>t.y===curYear);
+  const byPrev = all.filter(t=>t.y===prevYear);
 
+  function totAvg(arr){
+    const n=arr.reduce((a,t)=>a+t.n,0);
+    return {n, avg:n?Math.round(arr.reduce((a,t)=>a+t.avg*t.n,0)/n):0,
+      min:arr.length?Math.min(...arr.map(t=>t.min)):0,
+      max:arr.length?Math.max(...arr.map(t=>t.max)):0};
+  }
+
+  const sCur=totAvg(byCur), sPrev=totAvg(byPrev);
   const maxAvg = Math.max(...all.map(t=>t.avg), 1);
-  function mkRows(arr){ return arr.map(t=>`<tr>
-    <td class="left">${MESES[t.m]}</td><td>${t.n}</td>
-    <td class="left" style="white-space:nowrap">${t.avg} días <span class="t-bar" style="width:${Math.round(t.avg/maxAvg*80)}px"></span></td>
-    <td style="color:var(--text2)">${t.min}</td><td style="color:var(--text2)">${t.max}</td>
-  </tr>`).join('')||'<tr><td colspan="5" style="color:var(--text3);padding:10px 8px">Sin datos</td></tr>'; }
 
-  // Rangos dinámicos
+  function mkRows(arr){
+    return arr.map(t=>`<tr>
+      <td class="left" style="padding:5px 8px">${MESES[t.m]}</td>
+      <td style="padding:5px 8px">${t.n}</td>
+      <td class="left" style="padding:5px 8px;white-space:nowrap">${t.avg}d <span class="t-bar" style="width:${Math.round(t.avg/maxAvg*60)}px"></span></td>
+      <td style="padding:5px 8px;color:var(--text2)">${t.min}</td>
+      <td style="padding:5px 8px;color:var(--text2)">${t.max}</td>
+    </tr>`).join('')||'<tr><td colspan="5" style="color:var(--text3);padding:8px">Sin datos</td></tr>';
+  }
+
+  // Rangos
   const rangos=[[0,30],[31,40],[41,55],[56,70],[71,85],[86,99],[100,9999]];
   const tipoKeys = tipo ? [tipo] : ['Gerente','Jefatura','Profesional'];
   const rangoRows = rangos.map(([lo,hi])=>{
-    const lbl = hi===9999?`${lo}+ días`:`${lo}–${hi} días`;
+    const lbl = hi===9999?`${lo}+`:`${lo}–${hi}`;
     const cols = tipoKeys.map(t => rows.filter(r=>r.tipo===t&&r.dur>=lo&&r.dur<=hi).length);
     const tot = rows.filter(r=>r.dur>=lo&&r.dur<=hi).length;
     if(!tot) return '';
-    return `<tr><td class="left">${lbl}</td>${cols.map(c=>`<td>${c||'—'}</td>`).join('')}<td style="font-weight:600">${tot}</td></tr>`;
+    return `<tr><td class="left" style="padding:5px 8px">${lbl}</td>${cols.map(c=>`<td style="padding:5px 8px">${c||'—'}</td>`).join('')}<td style="padding:5px 8px;font-weight:600">${tot}</td></tr>`;
   }).join('');
   const colTots = tipoKeys.map(t=>rows.filter(r=>r.tipo===t).length);
 
@@ -1208,7 +1213,7 @@ function renderTiempos(){
   const consOpts = allCons.map(c=>`<option value="${c}" ${c===cons?'selected':''}>${c} — ${CMAP(c)}</option>`).join('');
 
   return`
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
     <div class="sec" style="margin:0">Tipo</div>
     <select id="t-tipo" onchange="render()" style="font-size:13px;padding:5px 9px;height:32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none">
       <option value="" ${!tipo?'selected':''}>Todos los tipos</option>
@@ -1223,31 +1228,38 @@ function renderTiempos(){
     </select>
     <span style="font-size:12px;color:var(--text3)">${rows.length} procesos cerrados</span>
   </div>
-  <div class="metrics" style="margin-bottom:16px">
-    <div class="metric"><div class="metric-lbl">Promedio 2024</div><div class="metric-val">${s24.avg||'—'}<span style="font-size:14px;font-weight:400">${s24.avg?' días':''}</span></div><div class="metric-sub">${s24.n} cierres</div></div>
-    <div class="metric"><div class="metric-lbl">Promedio 2025</div><div class="metric-val">${s25.avg||'—'}<span style="font-size:14px;font-weight:400">${s25.avg?' días':''}</span></div><div class="metric-sub">${s25.n} cierres</div></div>
-    <div class="metric"><div class="metric-lbl">Promedio 2026</div><div class="metric-val">${s26.avg||'—'}<span style="font-size:14px;font-weight:400">${s26.avg?' días':''}</span></div><div class="metric-sub">${s26.n} cierres</div></div>
+
+  <div class="metrics" style="margin-bottom:14px">
+    <div class="metric"><div class="metric-lbl">Promedio ${prevYear}</div><div class="metric-val">${sPrev.avg||'—'}<span style="font-size:13px;font-weight:400">${sPrev.avg?' d':''}</span></div><div class="metric-sub">${sPrev.n} cierres</div></div>
+    <div class="metric"><div class="metric-lbl">Promedio ${curYear}</div><div class="metric-val">${sCur.avg||'—'}<span style="font-size:13px;font-weight:400">${sCur.avg?' d':''}</span></div><div class="metric-sub">${sCur.n} cierres</div></div>
     <div class="metric"><div class="metric-lbl">Total cierres</div><div class="metric-val">${rows.length}</div></div>
-    <div class="metric"><div class="metric-lbl">Duración mín.</div><div class="metric-val">${rows.length?Math.min(...rows.map(r=>r.dur)):'—'}<span style="font-size:14px;font-weight:400">${rows.length?' d':''}</span></div></div>
-    <div class="metric"><div class="metric-lbl">Duración máx.</div><div class="metric-val">${rows.length?Math.max(...rows.map(r=>r.dur)):'—'}<span style="font-size:14px;font-weight:400">${rows.length?' d':''}</span></div></div>
+    <div class="metric"><div class="metric-lbl">Duración mín.</div><div class="metric-val">${rows.length?Math.min(...rows.map(r=>r.dur)):'—'}<span style="font-size:13px;font-weight:400">${rows.length?' d':''}</span></div></div>
+    <div class="metric"><div class="metric-lbl">Duración máx.</div><div class="metric-val">${rows.length?Math.max(...rows.map(r=>r.dur)):'—'}<span style="font-size:13px;font-weight:400">${rows.length?' d':''}</span></div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
-    <div><div class="sec">Por mes — 2024</div>
-    <div class="ct-wrap"><table class="t-table"><thead><tr><th class="left">Mes</th><th>N°</th><th class="left">Promedio</th><th>Mín</th><th>Máx</th></tr></thead>
-    <tbody>${mkRows(by24)}${s24.n?`<tr class="tot"><td class="left">Total</td><td>${s24.n}</td><td class="left">${s24.avg} días</td><td>${s24.min}</td><td>${s24.max}</td></tr>`:''}</tbody></table></div></div>
-    <div><div class="sec">Por mes — 2025</div>
-    <div class="ct-wrap"><table class="t-table"><thead><tr><th class="left">Mes</th><th>N°</th><th class="left">Promedio</th><th>Mín</th><th>Máx</th></tr></thead>
-    <tbody>${mkRows(by25)}${s25.n?`<tr class="tot"><td class="left">Total</td><td>${s25.n}</td><td class="left">${s25.avg} días</td><td>${s25.min}</td><td>${s25.max}</td></tr>`:''}</tbody></table></div></div>
-    <div><div class="sec">Por mes — 2026</div>
-    <div class="ct-wrap"><table class="t-table"><thead><tr><th class="left">Mes</th><th>N°</th><th class="left">Promedio</th><th>Mín</th><th>Máx</th></tr></thead>
-    <tbody>${mkRows(by26)}${s26.n?`<tr class="tot"><td class="left">Total</td><td>${s26.n}</td><td class="left">${s26.avg} días</td><td>${s26.min}</td><td>${s26.max}</td></tr>`:''}</tbody></table></div></div>
-  </div>
-  <div class="sec">Distribución por rango de duración — ${tipoLabel}${cons?' · '+cons:''}</div>
-  <div class="ct-wrap"><table class="t-table" style="max-width:560px">
-    <thead><tr><th class="left">Rango</th>${tipoKeys.map(t=>`<th>${t}</th>`).join('')}<th>Total</th></tr></thead>
-    <tbody>${rangoRows}
-    <tr class="tot"><td class="left">Total</td>${colTots.map(c=>`<td>${c}</td>`).join('')}<td>${rows.length}</td></tr></tbody>
-  </table></div>`;
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+    <div>
+      <div class="sec">Por mes — ${prevYear}</div>
+      <div class="ct-wrap"><table class="t-table" style="font-size:12px">
+        <thead><tr><th class="left" style="padding:6px 8px">Mes</th><th style="padding:6px 8px">N°</th><th class="left" style="padding:6px 8px">Prom.</th><th style="padding:6px 8px">Mín</th><th style="padding:6px 8px">Máx</th></tr></thead>
+        <tbody>${mkRows(byPrev)}${sPrev.n?`<tr class="tot"><td class="left" style="padding:5px 8px">Total</td><td style="padding:5px 8px">${sPrev.n}</td><td class="left" style="padding:5px 8px">${sPrev.avg}d</td><td style="padding:5px 8px">${sPrev.min}</td><td style="padding:5px 8px">${sPrev.max}</td></tr>`:''}</tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="sec">Por mes — ${curYear}</div>
+      <div class="ct-wrap"><table class="t-table" style="font-size:12px">
+        <thead><tr><th class="left" style="padding:6px 8px">Mes</th><th style="padding:6px 8px">N°</th><th class="left" style="padding:6px 8px">Prom.</th><th style="padding:6px 8px">Mín</th><th style="padding:6px 8px">Máx</th></tr></thead>
+        <tbody>${mkRows(byCur)}${sCur.n?`<tr class="tot"><td class="left" style="padding:5px 8px">Total</td><td style="padding:5px 8px">${sCur.n}</td><td class="left" style="padding:5px 8px">${sCur.avg}d</td><td style="padding:5px 8px">${sCur.min}</td><td style="padding:5px 8px">${sCur.max}</td></tr>`:''}</tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="sec">Distribución por rango — ${tipoLabel}${cons?' · '+cons:''}</div>
+      <div class="ct-wrap"><table class="t-table" style="font-size:12px;width:100%">
+        <thead><tr><th class="left" style="padding:6px 8px">Rango</th>${tipoKeys.map(t=>`<th style="padding:6px 8px">${t.slice(0,4)}.</th>`).join('')}<th style="padding:6px 8px">Tot</th></tr></thead>
+        <tbody>${rangoRows}<tr class="tot"><td class="left" style="padding:5px 8px">Total</td>${colTots.map(c=>`<td style="padding:5px 8px">${c}</td>`).join('')}<td style="padding:5px 8px">${rows.length}</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>`;
 }
 
 
@@ -1354,11 +1366,19 @@ function renderCierres(){
 
 function render(){
   const c=document.getElementById('main-content');
-  if(curTab==='procesos') c.innerHTML=renderProcesos();
+  // Preserve scroll position of table-wrap before re-render
+  const tw=c.querySelector('.table-wrap');
+  const scrollTop=tw?tw.scrollTop:0;
 
+  if(curTab==='procesos') c.innerHTML=renderProcesos();
   else if(curTab==='cargas') c.innerHTML=renderCargas();
   else if(curTab==='tiempos') c.innerHTML=renderTiempos();
   else if(curTab==='cierres') c.innerHTML=renderCierres();
+
+  // Restore scroll position
+  const tw2=c.querySelector('.table-wrap');
+  if(tw2 && scrollTop) tw2.scrollTop=scrollTop;
+
   if(activeCell){
     const el=document.getElementById(`ci-${activeCell.rowId}-${activeCell.field}`);
     if(el){el.focus();if(el.select)el.select();}
@@ -1506,6 +1526,31 @@ async function deleteFromSheets(id) {
     console.error(err);
   }
 }
+
+// ─── CLOSE CELL ON OUTSIDE CLICK ────────────────────────────────────────────
+document.addEventListener('mousedown', function(e){
+  if(!activeCell) return;
+  // If clicking inside an active cell input/select, do nothing
+  const activeEl = document.getElementById(`ci-${activeCell.rowId}-${activeCell.field}`);
+  if(activeEl && activeEl.contains(e.target)) return;
+  // If clicking on another cell (td), let it handle itself — commit current first
+  const cell = e.target.closest('td');
+  if(cell) {
+    // Commit current cell value before opening new one
+    if(activeEl) {
+      const val = activeEl.value !== undefined ? activeEl.value : activeEl.options?.[activeEl.selectedIndex]?.value;
+      if(val !== undefined) commitCell(activeCell.rowId, activeCell.field, val);
+      else { activeCell=null; render(); }
+    } else { activeCell=null; render(); }
+  } else {
+    // Click outside table entirely — commit and close
+    if(activeEl) {
+      const val = activeEl.value !== undefined ? activeEl.value : activeEl.options?.[activeEl.selectedIndex]?.value;
+      if(val !== undefined) commitCell(activeCell.rowId, activeCell.field, val);
+    }
+    activeCell=null; render();
+  }
+}, true);
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 loadFromSheets(); // Carga desde Google Sheets al abrir

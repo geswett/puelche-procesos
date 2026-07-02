@@ -983,7 +983,7 @@ function renderProcesos(){
       ${makeCell(r.id,'apr',fmtDate(r.apr)?`<span style="font-size:11px">${fmtDate(r.apr)}</span>`:'','date')}
       <td><div class="cell" style="padding:7px 6px"><span style="font-size:11px;color:${r.ll?'var(--accent)':'var(--text3)'}">${fmtDate(r.ll)||'Auto'}</span></div></td>
       ${makeCell(r.id,'fco',fmtDate(r.fco)?`<span style="font-size:11px">${fmtDate(r.fco)}</span>`:'','date')}
-      ${makeCell(r.id,'cand',r.cand?`<span style="font-size:12px;color:var(--blue);font-weight:600">${r.cand}</span>`:'','text')}
+      <td onclick="openEdit(${r.id})" style="cursor:pointer" title="Editar candidato y fechas de cierre"><div class="cell">${r.cand?`<span style="font-size:12px;color:var(--blue);font-weight:600">${r.cand}</span>`:'<span class="hint">—</span>'}</div></td>
       ${makeCell(r.id,'sp',r.sp?`<span style="font-size:12px;color:var(--text2);display:block;white-space:normal;line-height:1.4">${r.sp}</span>`:'','text')}
       <td><button class="del-btn" onclick="if(confirm('¿Eliminar este proceso?')){deleteFromSheets(${r.id});DATA=DATA.filter(x=>x.id!==${r.id});render();}" title="Eliminar">🗑</button></td>
     </tr>`;

@@ -257,8 +257,26 @@ tr:hover .del-btn{opacity:1}
       </label>
     </div>
   </div>
-  <select id="f-cons" onchange="render()"><option value="">Todas las consultoras</option></select>
-  <select id="f-apoyo" onchange="render()"><option value="">Todos los apoyos</option></select>
+  <div style="position:relative;display:inline-block">
+    <button id="f-team-btn" onclick="toggleTeamMenu()" style="height:32px;padding:0 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap;min-width:140px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:6px">
+      <span id="f-team-label">Todas</span><span>▾</span>
+    </button>
+    <div id="f-team-menu" style="display:none;position:absolute;top:36px;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:220px;padding:4px 0">
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600">
+        <input type="checkbox" id="team-all" checked onchange="teamGroupChanged('all')"> Todas las personas
+      </label>
+      <hr style="margin:2px 0;border:none;border-top:1px solid var(--border)">
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)">
+        <input type="checkbox" id="team-grp-cons" checked onchange="teamGroupChanged('cons')"> Consultoras
+      </label>
+      <div id="team-cons-items"></div>
+      <hr style="margin:2px 0;border:none;border-top:1px solid var(--border)">
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2)">
+        <input type="checkbox" id="team-grp-apoyo" checked onchange="teamGroupChanged('apoyo')"> Apoyos
+      </label>
+      <div id="team-apoyo-items"></div>
+    </div>
+  </div>
   <select id="f-rep" onchange="render()">
     <option value="">Reposición: Todos</option>
     <option value="SI">Reposición: Sí</option>
@@ -837,12 +855,21 @@ function fillSel(id,opts){
 function initSelects(){
   fillSel('n-c1',CONS_OPTS()); fillSel('n-c2',CONS_OPTS()); fillSel('n-ap',APOYO_OPTS());
 
-  const fc=document.getElementById('f-cons');
-  while(fc.options.length>1)fc.remove(1);
-  CONS_OPTS().sort().forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=`${k} — ${CMAP(k)}`;fc.appendChild(o);});
-  const fa=document.getElementById('f-apoyo');
-  while(fa.options.length>1)fa.remove(1);
-  APOYO_OPTS().sort().forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=`${k} — ${CMAP(k)}`;fa.appendChild(o);});
+  // Populate team filter checkboxes
+  const consItems = document.getElementById('team-cons-items');
+  const apoyoItems = document.getElementById('team-apoyo-items');
+  if(consItems) {
+    consItems.innerHTML = CONS_OPTS().sort().map(k=>`
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="team-cb team-cons-cb" value="${k}" checked onchange="teamCbChanged()"> ${k} — ${CMAP(k)}
+      </label>`).join('');
+  }
+  if(apoyoItems) {
+    apoyoItems.innerHTML = APOYO_OPTS().sort().map(k=>`
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="team-cb team-apoyo-cb" value="${k}" checked onchange="teamCbChanged()"> ${k} — ${CMAP(k)}
+      </label>`).join('');
+  }
 }
 
 // ─── COMMIT CELL ────────────────────────────────────────────────────────────
@@ -972,16 +999,25 @@ function getFiltered(){
   const etVals=[...document.querySelectorAll('.et-cb:checked')].map(cb=>cb.value);
   const allCbs=[...document.querySelectorAll('.et-cb')];
   const etAll=allCbs.length>0&&allCbs.every(cb=>cb.checked);
-  const cons=document.getElementById('f-cons').value;
-  const apoyo=document.getElementById('f-apoyo').value;
+  // Team filter: get checked consultoras and apoyos
+  const checkedCons=[...document.querySelectorAll('.team-cons-cb:checked')].map(cb=>cb.value);
+  const checkedApoyo=[...document.querySelectorAll('.team-apoyo-cb:checked')].map(cb=>cb.value);
+  const allConsCbs=[...document.querySelectorAll('.team-cons-cb')];
+  const allApoyoCbs=[...document.querySelectorAll('.team-apoyo-cb')];
+  const allConsChecked=allConsCbs.length===checkedCons.length;
+  const allApoyoChecked=allApoyoCbs.length===checkedApoyo.length;
   const rep=document.getElementById('f-rep').value;
   const tipo=document.getElementById('f-tipo').value;
   const q=document.getElementById('f-search').value.toLowerCase();
   return DATA.filter(r=>{
     // st handled by etapa checkboxes
     if(!etAll&&etVals.length>0&&!etVals.includes(r.et))return false;
-    if(cons&&r.c1!==cons&&r.c2!==cons)return false;
-    if(apoyo&&r.ap!==apoyo)return false;
+    // Team filter: show record if any of its people are checked
+    if(!allConsChecked || !allApoyoChecked) {
+      const consMatch = checkedCons.includes(r.c1) || checkedCons.includes(r.c2);
+      const apoyoMatch = checkedApoyo.includes(r.ap);
+      if(!consMatch && !apoyoMatch) return false;
+    }
     if(rep && (r.rep||'NO')!==rep) return false;
     if(tipo && r.tipo!==tipo) return false;
     if(q&&!r.emp.toLowerCase().includes(q)&&!r.proc.toLowerCase().includes(q))return false;
@@ -996,6 +1032,67 @@ function setTab(t,el){
   if(t==='cierres') setTimeout(()=>{ const el=document.getElementById('c-search'); if(el) el.focus(); },50);
   render();
 }
+function toggleTeamMenu(){
+  const m=document.getElementById('f-team-menu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+function teamGroupChanged(grp){
+  if(grp==='all'){
+    const ck=document.getElementById('team-all').checked;
+    document.querySelectorAll('.team-cb').forEach(cb=>cb.checked=ck);
+    document.getElementById('team-grp-cons').checked=ck;
+    document.getElementById('team-grp-apoyo').checked=ck;
+  } else if(grp==='cons'){
+    const ck=document.getElementById('team-grp-cons').checked;
+    document.querySelectorAll('.team-cons-cb').forEach(cb=>cb.checked=ck);
+  } else if(grp==='apoyo'){
+    const ck=document.getElementById('team-grp-apoyo').checked;
+    document.querySelectorAll('.team-apoyo-cb').forEach(cb=>cb.checked=ck);
+  }
+  syncTeamHeaders();
+  updateTeamLabel();
+  render();
+}
+function teamCbChanged(){
+  syncTeamHeaders();
+  updateTeamLabel();
+  render();
+}
+function syncTeamHeaders(){
+  const consCbs=[...document.querySelectorAll('.team-cons-cb')];
+  const apoyoCbs=[...document.querySelectorAll('.team-apoyo-cb')];
+  const allCbs=[...document.querySelectorAll('.team-cb')];
+  const gc=document.getElementById('team-grp-cons');
+  const ga=document.getElementById('team-grp-apoyo');
+  const gall=document.getElementById('team-all');
+  if(!gc||!ga||!gall) return;
+  gc.checked=consCbs.every(cb=>cb.checked); gc.indeterminate=!gc.checked&&consCbs.some(cb=>cb.checked);
+  ga.checked=apoyoCbs.every(cb=>cb.checked); ga.indeterminate=!ga.checked&&apoyoCbs.some(cb=>cb.checked);
+  gall.checked=allCbs.every(cb=>cb.checked); gall.indeterminate=!gall.checked&&allCbs.some(cb=>cb.checked);
+}
+function updateTeamLabel(){
+  const lbl=document.getElementById('f-team-label'); if(!lbl) return;
+  const allCbs=[...document.querySelectorAll('.team-cb')];
+  const checked=allCbs.filter(cb=>cb.checked);
+  const consCks=[...document.querySelectorAll('.team-cons-cb:checked')];
+  const apCks=[...document.querySelectorAll('.team-apoyo-cb:checked')];
+  const consCbs=[...document.querySelectorAll('.team-cons-cb')];
+  const apCbs=[...document.querySelectorAll('.team-apoyo-cb')];
+  if(checked.length===allCbs.length){ lbl.textContent='Todas'; return; }
+  if(checked.length===0){ lbl.textContent='Ninguna'; return; }
+  if(consCks.length===consCbs.length && apCks.length===0){ lbl.textContent='Consultoras'; return; }
+  if(apCks.length===apCbs.length && consCks.length===0){ lbl.textContent='Apoyos'; return; }
+  if(checked.length===1){ lbl.textContent=checked[0].value; return; }
+  lbl.textContent=checked.length+' personas';
+}
+// Close team menu when clicking outside
+document.addEventListener('click',function(e){
+  const menu=document.getElementById('f-team-menu');
+  const btn=document.getElementById('f-team-btn');
+  if(menu&&btn&&!menu.contains(e.target)&&!btn.contains(e.target)){
+    menu.style.display='none';
+  }
+});
 function toggleEtapaMenu(){
   const m=document.getElementById('f-etapa-menu');
   m.style.display=m.style.display==='none'?'block':'none';
@@ -1666,7 +1763,7 @@ document.addEventListener('mousedown', function(e){
 }, true);
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-loadFromSheets(); //  Carga desde Google Sheets al abrir
+loadFromSheets(); // Carga desde Google Sheets al abrir
 </script>
 </body>
 </html>

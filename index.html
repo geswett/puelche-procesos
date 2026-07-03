@@ -212,25 +212,49 @@ tr:hover .del-btn{opacity:1}
 <div id="status-bar" style="display:none;padding:8px 20px;font-size:13px;font-weight:500;transition:all .3s"></div>
 
 <div class="filters" id="filter-bar">
-  <select id="f-status" onchange="render()">
-    <option value="Activo">Activos</option>
-    <option value="">Todos</option>
-    <option value="Inactivo">Inactivos</option>
-  </select>
   <div style="position:relative;display:inline-block">
-    <button id="f-etapa-btn" onclick="toggleEtapaMenu()" style="height:32px;padding:0 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap;min-width:130px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:6px">
-      <span id="f-etapa-label">Todas las etapas</span><span>▾</span>
+    <button id="f-etapa-btn" onclick="toggleEtapaMenu()" style="height:32px;padding:0 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap;min-width:140px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:6px">
+      <span id="f-etapa-label">Activos</span><span>▾</span>
     </button>
-    <div id="f-etapa-menu" style="display:none;position:absolute;top:36px;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:200px;padding:4px 0">
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" id="et-all" checked onchange="etapaAllChanged()"> Todas las etapas</label>
+    <div id="f-etapa-menu" style="display:none;position:absolute;top:36px;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:220px;padding:4px 0">
+      <!-- Grupo Todos -->
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600">
+        <input type="checkbox" id="et-all" onchange="etapaGroupChanged('all')"> Todos los procesos
+      </label>
       <hr style="margin:2px 0;border:none;border-top:1px solid var(--border)">
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Inicio" onchange="etapaCbChanged()"> Inicio</label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Medio" onchange="etapaCbChanged()"> Medio</label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Final" onchange="etapaCbChanged()"> Final</label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Esperando Aprobación" onchange="etapaCbChanged()"> Esp. Aprobación</label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Stand By" onchange="etapaCbChanged()"> Stand By</label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Cerrado" onchange="etapaCbChanged()"> Cerrado</label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Suspendido" onchange="etapaCbChanged()"> Suspendido</label>
+      <!-- Grupo Activos -->
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)">
+        <input type="checkbox" id="et-grp-activo" checked onchange="etapaGroupChanged('activo')"> Activos
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="et-cb et-activo" value="Inicio" checked onchange="etapaCbChanged()"> Inicio
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="et-cb et-activo" value="Medio" checked onchange="etapaCbChanged()"> Medio
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="et-cb et-activo" value="Final" checked onchange="etapaCbChanged()"> Final
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="et-cb et-activo" value="Esperando Aprobación" checked onchange="etapaCbChanged()"> Esp. Aprobación
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="et-cb et-activo" value="Stand By" checked onchange="etapaCbChanged()"> Stand By
+      </label>
+      <hr style="margin:2px 0;border:none;border-top:1px solid var(--border)">
+      <!-- Grupo Inactivos -->
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2)">
+        <input type="checkbox" id="et-grp-inactivo" onchange="etapaGroupChanged('inactivo')"> Inactivos
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="et-cb et-inactivo" value="Cerrado" onchange="etapaCbChanged()"> Cerrado
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="et-cb et-inactivo" value="Suspendido" onchange="etapaCbChanged()"> Suspendido
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="et-cb et-inactivo" value="" onchange="etapaCbChanged()"> Sin etapa
+      </label>
     </div>
   </div>
   <select id="f-cons" onchange="render()"><option value="">Todas las consultoras</option></select>
@@ -943,18 +967,19 @@ function openDetail(id){
 
 // ─── FILTER / SORT ──────────────────────────────────────────────────────────
 function getFiltered(){
-  const st=document.getElementById('f-status').value;
-  // Checkbox etapa: get all checked values
-  const etCbs=[...document.querySelectorAll('.et-cb:checked')].map(cb=>cb.value);
-  const etVals=etCbs; // empty = all
+  const st=''; // status now handled by etapa checkboxes
+  // Hierarchical filter: get checked etapas
+  const etVals=[...document.querySelectorAll('.et-cb:checked')].map(cb=>cb.value);
+  const allCbs=[...document.querySelectorAll('.et-cb')];
+  const etAll=allCbs.length>0&&allCbs.every(cb=>cb.checked);
   const cons=document.getElementById('f-cons').value;
   const apoyo=document.getElementById('f-apoyo').value;
   const rep=document.getElementById('f-rep').value;
   const tipo=document.getElementById('f-tipo').value;
   const q=document.getElementById('f-search').value.toLowerCase();
   return DATA.filter(r=>{
-    if(st&&r.st!==st)return false;
-    if(etVals.length>0&&!etVals.includes(r.et))return false;
+    // st handled by etapa checkboxes
+    if(!etAll&&etVals.length>0&&!etVals.includes(r.et))return false;
     if(cons&&r.c1!==cons&&r.c2!==cons)return false;
     if(apoyo&&r.ap!==apoyo)return false;
     if(rep && (r.rep||'NO')!==rep) return false;
@@ -975,26 +1000,67 @@ function toggleEtapaMenu(){
   const m=document.getElementById('f-etapa-menu');
   m.style.display=m.style.display==='none'?'block':'none';
 }
-function etapaAllChanged(){
-  const allCb=document.getElementById('et-all');
-  document.querySelectorAll('.et-cb').forEach(cb=>cb.checked=false);
+const ACTIVO_ETS  = ['Inicio','Medio','Final','Esperando Aprobación','Stand By'];
+const INACTIVO_ETS = ['Cerrado','Suspendido',''];
+function etapaGroupChanged(grp){
+  if(grp==='all'){
+    const allCk=document.getElementById('et-all').checked;
+    document.querySelectorAll('.et-cb').forEach(cb=>cb.checked=allCk);
+    document.getElementById('et-grp-activo').checked=allCk;
+    document.getElementById('et-grp-inactivo').checked=allCk;
+  } else if(grp==='activo'){
+    const ck=document.getElementById('et-grp-activo').checked;
+    document.querySelectorAll('.et-activo').forEach(cb=>cb.checked=ck);
+  } else if(grp==='inactivo'){
+    const ck=document.getElementById('et-grp-inactivo').checked;
+    document.querySelectorAll('.et-inactivo').forEach(cb=>cb.checked=ck);
+  }
+  syncGroupHeaders();
   updateEtapaLabel();
   render();
 }
 function etapaCbChanged(){
-  const cbs=[...document.querySelectorAll('.et-cb')];
-  const checked=cbs.filter(cb=>cb.checked);
-  document.getElementById('et-all').checked=checked.length===0;
+  syncGroupHeaders();
   updateEtapaLabel();
   render();
 }
+function syncGroupHeaders(){
+  const activoCbs=[...document.querySelectorAll('.et-activo')];
+  const inactivoCbs=[...document.querySelectorAll('.et-inactivo')];
+  const allCbs=[...document.querySelectorAll('.et-cb')];
+  const activoAll=activoCbs.every(cb=>cb.checked);
+  const activoSome=activoCbs.some(cb=>cb.checked);
+  const inactivoAll=inactivoCbs.every(cb=>cb.checked);
+  const inactivoSome=inactivoCbs.some(cb=>cb.checked);
+  const ga=document.getElementById('et-grp-activo');
+  const gi=document.getElementById('et-grp-inactivo');
+  const gall=document.getElementById('et-all');
+  ga.checked=activoAll; ga.indeterminate=!activoAll&&activoSome;
+  gi.checked=inactivoAll; gi.indeterminate=!inactivoAll&&inactivoSome;
+  const allChecked=allCbs.every(cb=>cb.checked);
+  const someChecked=allCbs.some(cb=>cb.checked);
+  gall.checked=allChecked; gall.indeterminate=!allChecked&&someChecked;
+}
 function updateEtapaLabel(){
-  const checked=[...document.querySelectorAll('.et-cb:checked')].map(cb=>cb.value);
   const lbl=document.getElementById('f-etapa-label');
   if(!lbl) return;
-  if(checked.length===0) lbl.textContent='Todas las etapas';
-  else if(checked.length===1) lbl.textContent=checked[0]==='Esperando Aprobación'?'Esp. Aprobación':checked[0];
-  else lbl.textContent=checked.length+' etapas';
+  const activoCbs=[...document.querySelectorAll('.et-activo')];
+  const inactivoCbs=[...document.querySelectorAll('.et-inactivo')];
+  const activoAll=activoCbs.every(cb=>cb.checked);
+  const activoNone=activoCbs.every(cb=>!cb.checked);
+  const inactivoAll=inactivoCbs.every(cb=>cb.checked);
+  const inactivoNone=inactivoCbs.every(cb=>!cb.checked);
+  const allChecked=[...document.querySelectorAll('.et-cb')].every(cb=>cb.checked);
+  if(allChecked){ lbl.textContent='Todos'; return; }
+  if(activoAll && inactivoNone){ lbl.textContent='Activos'; return; }
+  if(inactivoAll && activoNone){ lbl.textContent='Inactivos'; return; }
+  const checked=[...document.querySelectorAll('.et-cb:checked')];
+  if(checked.length===1){
+    const v=checked[0].value;
+    lbl.textContent=v==='Esperando Aprobación'?'Esp. Aprobación':(v||'Sin etapa');
+    return;
+  }
+  lbl.textContent=checked.length+' etapas';
 }
 // Close etapa menu when clicking outside
 document.addEventListener('click',function(e){

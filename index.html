@@ -217,8 +217,24 @@ tr:hover .del-btn{opacity:1}
     <option value="">Todos</option>
     <option value="Inactivo">Inactivos</option>
   </select>
-  <select id="f-etapa" onchange="render()"><option value="">Todas las etapas</option></select>
+  <div style="position:relative;display:inline-block">
+    <button id="f-etapa-btn" onclick="toggleEtapaMenu()" style="height:32px;padding:0 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap;min-width:130px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:6px">
+      <span id="f-etapa-label">Todas las etapas</span><span>▾</span>
+    </button>
+    <div id="f-etapa-menu" style="display:none;position:absolute;top:36px;left:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:200px;padding:4px 0">
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" id="et-all" checked onchange="etapaAllChanged()"> Todas las etapas</label>
+      <hr style="margin:2px 0;border:none;border-top:1px solid var(--border)">
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Inicio" onchange="etapaCbChanged()"> Inicio</label>
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Medio" onchange="etapaCbChanged()"> Medio</label>
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Final" onchange="etapaCbChanged()"> Final</label>
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Esperando Aprobación" onchange="etapaCbChanged()"> Esp. Aprobación</label>
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Stand By" onchange="etapaCbChanged()"> Stand By</label>
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Cerrado" onchange="etapaCbChanged()"> Cerrado</label>
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px"><input type="checkbox" class="et-cb" value="Suspendido" onchange="etapaCbChanged()"> Suspendido</label>
+    </div>
+  </div>
   <select id="f-cons" onchange="render()"><option value="">Todas las consultoras</option></select>
+  <select id="f-apoyo" onchange="render()"><option value="">Todos los apoyos</option></select>
   <select id="f-rep" onchange="render()">
     <option value="">Reposición: Todos</option>
     <option value="SI">Reposición: Sí</option>
@@ -796,13 +812,13 @@ function fillSel(id,opts){
 }
 function initSelects(){
   fillSel('n-c1',CONS_OPTS()); fillSel('n-c2',CONS_OPTS()); fillSel('n-ap',APOYO_OPTS());
-  const fe=document.getElementById('f-etapa');
-  while(fe.options.length>1)fe.remove(1);
-  // Use fixed list so all etapas appear even if no records exist yet
-  ['Esperando Aprobación','Stand By','Inicio','Medio','Final','Cerrado','Suspendido'].forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;fe.appendChild(o);});
+
   const fc=document.getElementById('f-cons');
   while(fc.options.length>1)fc.remove(1);
-  [...new Set([...CONS_OPTS(),...APOYO_OPTS()])].sort().forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=`${k} — ${CMAP(k)}`;fc.appendChild(o);});
+  CONS_OPTS().sort().forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=`${k} — ${CMAP(k)}`;fc.appendChild(o);});
+  const fa=document.getElementById('f-apoyo');
+  while(fa.options.length>1)fa.remove(1);
+  APOYO_OPTS().sort().forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=`${k} — ${CMAP(k)}`;fa.appendChild(o);});
 }
 
 // ─── COMMIT CELL ────────────────────────────────────────────────────────────
@@ -928,15 +944,19 @@ function openDetail(id){
 // ─── FILTER / SORT ──────────────────────────────────────────────────────────
 function getFiltered(){
   const st=document.getElementById('f-status').value;
-  const et=document.getElementById('f-etapa').value;
+  // Checkbox etapa: get all checked values
+  const etCbs=[...document.querySelectorAll('.et-cb:checked')].map(cb=>cb.value);
+  const etVals=etCbs; // empty = all
   const cons=document.getElementById('f-cons').value;
+  const apoyo=document.getElementById('f-apoyo').value;
   const rep=document.getElementById('f-rep').value;
   const tipo=document.getElementById('f-tipo').value;
   const q=document.getElementById('f-search').value.toLowerCase();
   return DATA.filter(r=>{
     if(st&&r.st!==st)return false;
-    if(et&&r.et!==et)return false;
-    if(cons&&r.c1!==cons&&r.c2!==cons&&r.ap!==cons)return false;
+    if(etVals.length>0&&!etVals.includes(r.et))return false;
+    if(cons&&r.c1!==cons&&r.c2!==cons)return false;
+    if(apoyo&&r.ap!==apoyo)return false;
     if(rep && (r.rep||'NO')!==rep) return false;
     if(tipo && r.tipo!==tipo) return false;
     if(q&&!r.emp.toLowerCase().includes(q)&&!r.proc.toLowerCase().includes(q))return false;
@@ -951,6 +971,39 @@ function setTab(t,el){
   if(t==='cierres') setTimeout(()=>{ const el=document.getElementById('c-search'); if(el) el.focus(); },50);
   render();
 }
+function toggleEtapaMenu(){
+  const m=document.getElementById('f-etapa-menu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+function etapaAllChanged(){
+  const allCb=document.getElementById('et-all');
+  document.querySelectorAll('.et-cb').forEach(cb=>cb.checked=false);
+  updateEtapaLabel();
+  render();
+}
+function etapaCbChanged(){
+  const cbs=[...document.querySelectorAll('.et-cb')];
+  const checked=cbs.filter(cb=>cb.checked);
+  document.getElementById('et-all').checked=checked.length===0;
+  updateEtapaLabel();
+  render();
+}
+function updateEtapaLabel(){
+  const checked=[...document.querySelectorAll('.et-cb:checked')].map(cb=>cb.value);
+  const lbl=document.getElementById('f-etapa-label');
+  if(!lbl) return;
+  if(checked.length===0) lbl.textContent='Todas las etapas';
+  else if(checked.length===1) lbl.textContent=checked[0]==='Esperando Aprobación'?'Esp. Aprobación':checked[0];
+  else lbl.textContent=checked.length+' etapas';
+}
+// Close etapa menu when clicking outside
+document.addEventListener('click',function(e){
+  const menu=document.getElementById('f-etapa-menu');
+  const btn=document.getElementById('f-etapa-btn');
+  if(menu&&btn&&!menu.contains(e.target)&&!btn.contains(e.target)){
+    menu.style.display='none';
+  }
+});
 function sortBy(col){if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}render();}
 
 // ─── RENDER PROCESOS ─────────────────────────────────────────────────────────

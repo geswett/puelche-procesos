@@ -1243,14 +1243,14 @@ function renderCargas(){
     const mult = etMult[r.et] || 0;
     const carga = calcCarga(r);
     const hasTwoCons = !!(r.c1 && r.c2);
-    return carga * mult * (hasTwoCons ? 0.5 : 1.0);
+    return carga * mult * (hasTwoCons ? 0.5 : 1.0) * 1.0; // factor consultora
   }
 
   // Ponderado de una persona como apoyo en un proceso
   function pondApoyo(r){
     const mult = etMult[r.et] || 0;
     const carga = calcCarga(r);
-    return carga * mult;
+    return carga * mult * 0.818182; // factor apoyo
   }
 
   // ── Calcular stats por persona ──────────────────────────────────────────
@@ -1346,7 +1346,7 @@ function renderCargas(){
     <tbody>${combiRows}</tbody>
   </table></div>
   <div style="font-size:11px;color:var(--text3);margin-top:8px">
-    Ponderado: Inicio × 1.0 · Medio × 0.7 · Final × 0.2 · Carga Gerente × 1.25 · Si hay 2 consultoras el ponderado se divide en 2 · Esperando Aprobación y Stand By se excluyen
+    Ponderado: Inicio × 1.0 · Medio × 0.7 · Final × 0.2 · Carga Gerente × 1.25 · Consultora × 1.0 · Apoyo × 9/11 · 2 consultoras ÷ 2 · Esp. Aprobación y Stand By se excluyen
   </div>`;
 }
 
@@ -1769,7 +1769,7 @@ document.addEventListener('mousedown', function(e){
 }, true);
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-loadFromSheets(); //Carga desde Google Sheets al abrir
+loadFromSheets(); // Carga desde Google Sheets al abrir
 </script>
 </body>
 </html>

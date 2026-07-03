@@ -1530,24 +1530,18 @@ async function deleteFromSheets(id) {
 // ─── CLOSE CELL ON OUTSIDE CLICK ────────────────────────────────────────────
 document.addEventListener('mousedown', function(e){
   if(!activeCell) return;
-  // If clicking inside an active cell input/select, do nothing
   const activeEl = document.getElementById(`ci-${activeCell.rowId}-${activeCell.field}`);
+  // Never interrupt a select element — let it open its native dropdown
+  if(e.target.tagName === 'SELECT' || e.target.closest('select')) return;
+  if(activeEl && activeEl.tagName === 'SELECT') return;
+  // If clicking inside the active cell, do nothing
   if(activeEl && activeEl.contains(e.target)) return;
-  // If clicking on another cell (td), let it handle itself — commit current first
-  const cell = e.target.closest('td');
-  if(cell) {
-    // Commit current cell value before opening new one
-    if(activeEl) {
-      const val = activeEl.value !== undefined ? activeEl.value : activeEl.options?.[activeEl.selectedIndex]?.value;
-      if(val !== undefined) commitCell(activeCell.rowId, activeCell.field, val);
-      else { activeCell=null; render(); }
-    } else { activeCell=null; render(); }
+  // Clicking elsewhere — commit and close
+  if(activeEl) {
+    const val = activeEl.value !== undefined ? activeEl.value : activeEl.options?.[activeEl.selectedIndex]?.value;
+    if(val !== undefined) commitCell(activeCell.rowId, activeCell.field, val);
+    else { activeCell=null; render(); }
   } else {
-    // Click outside table entirely — commit and close
-    if(activeEl) {
-      const val = activeEl.value !== undefined ? activeEl.value : activeEl.options?.[activeEl.selectedIndex]?.value;
-      if(val !== undefined) commitCell(activeCell.rowId, activeCell.field, val);
-    }
     activeCell=null; render();
   }
 }, true);

@@ -1758,6 +1758,7 @@ async function saveToSheets(record) {
       Duracion: record.dur || '',
       MesCierre: record.mc || '',
       AnioCierre: record.ac || '',
+      Garantia: record.gar || '',
     };
     const res = await fetch(SCRIPT_URL, {
       method: 'POST',
@@ -1788,7 +1789,7 @@ async function syncAll() {
         AprobacionPerfil: r.apr || '', LongList: r.ll || '',
         FirmaCO: r.fco || '', FechaIngreso: r.fi || '',
         CandidatoSeleccionado: r.cand, Notas: r.sp,
-        Duracion: r.dur || '', MesCierre: r.mc || '', AnioCierre: r.ac || '',
+        Duracion: r.dur || '', MesCierre: r.mc || '', AnioCierre: r.ac || '', Garantia: r.gar || '',
       };
       const res = await fetch(SCRIPT_URL, {
         method: 'POST',

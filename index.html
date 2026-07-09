@@ -207,6 +207,7 @@ tr:hover .del-btn{opacity:1}
     <button class="tab" onclick="setTab('cierres',this)">Cierres</button>
   </div>
   <button class="btn" onclick="openSettings()" title="Gestionar consultoras y apoyos">⚙ Consultoras</button>
+  <button class="btn" onclick="syncAll()" title="Forzar guardado de todos los cambios">↑ Sincronizar</button>
   <button class="btn btn-primary" onclick="openNew()">+ Nuevo</button>
 </div>
 <div id="status-bar" style="display:none;padding:8px 20px;font-size:13px;font-weight:500;transition:all .3s"></div>
@@ -322,6 +323,17 @@ tr:hover .del-btn{opacity:1}
   <div class="nf"><label>¿Es reposición?</label>
     <select id="n-rep"><option value="NO" selected>No</option><option value="SI">Sí</option></select>
   </div>
+  <div class="nf"><label>Garantía (meses)</label>
+    <select id="n-gar">
+      <option value="">Sin garantía</option>
+      <option value="1">1 mes</option><option value="2">2 meses</option>
+      <option value="3" selected>3 meses</option><option value="4">4 meses</option>
+      <option value="5">5 meses</option><option value="6">6 meses</option>
+      <option value="7">7 meses</option><option value="8">8 meses</option>
+      <option value="9">9 meses</option><option value="10">10 meses</option>
+      <option value="11">11 meses</option><option value="12">12 meses</option>
+    </select>
+  </div>
   <div class="fa">
     <button class="btn" onclick="closeNew()">Cancelar</button>
     <button class="btn btn-primary" onclick="saveNew()">Crear proceso</button>
@@ -337,6 +349,17 @@ tr:hover .del-btn{opacity:1}
   <div class="nf"><label>Candidato seleccionado</label><input id="e-cand" placeholder="Nombre del candidato"></div>
   <div class="nf"><label>Firma Carta Oferta</label><input type="date" id="e-fco"></div>
   <div class="nf"><label>Ingreso candidato</label><input type="date" id="e-fi"></div>
+  <div class="nf"><label>Garantía (meses)</label>
+    <select id="e-gar">
+      <option value="">Sin garantía</option>
+      <option value="1">1 mes</option><option value="2">2 meses</option>
+      <option value="3">3 meses</option><option value="4">4 meses</option>
+      <option value="5">5 meses</option><option value="6">6 meses</option>
+      <option value="7">7 meses</option><option value="8">8 meses</option>
+      <option value="9">9 meses</option><option value="10">10 meses</option>
+      <option value="11">11 meses</option><option value="12">12 meses</option>
+    </select>
+  </div>
   <div class="fa">
     <button class="btn" onclick="closeEdit()">Completar después</button>
     <button class="btn btn-primary" onclick="saveEdit()">Guardar</button>
@@ -405,7 +428,7 @@ function CONS_OPTS(){ return CONSULTORAS.map(c=>c.k); }
 function APOYO_OPTS(){ return APOYOS.map(a=>a.k); }
 
 // ─── DATA ───────────────────────────────────────────────────────────────────
-const FIELDS=['id','emp','proc','tipo','n','c1','c2','ap','st','et','rep','acep','lp','apr','ll','fco','fi','cand','sp','dur','mc','ac'];
+const FIELDS=['id','emp','proc','tipo','n','c1','c2','ap','st','et','rep','acep','lp','apr','ll','fco','fi','cand','sp','dur','mc','ac','gar'];
 let DATA=[
 [0,"AQUACHILE","Analista de Compensaciones","",1,"","","","Inactivo","","",null,"2023-10-03","2023-10-10","2023-10-24",null,null,"","",994,null,null],
 [1,"AQUACHILE","Analista de Reclutamiento y Selección","",null,"","","","Inactivo","","",null,"2023-05-03","2023-10-10","2023-10-24",null,null,"","",994,null,null],
@@ -914,6 +937,7 @@ function openEdit(id){
   document.getElementById('e-cand').value=r.cand||'';
   document.getElementById('e-fco').value=r.fco||'';
   document.getElementById('e-fi').value=r.fi||'';
+  document.getElementById('e-gar').value=r.gar||'';
   document.getElementById('ov-edit').classList.add('open');
   render();
 }
@@ -927,6 +951,7 @@ function saveEdit(){
   r.cand=document.getElementById('e-cand').value.trim();
   r.fco=document.getElementById('e-fco').value||null;
   r.fi=document.getElementById('e-fi').value||null;
+  r.gar=document.getElementById('e-gar').value?Number(document.getElementById('e-gar').value):null;
   if(r.fi&&r.lp){
     const d=Math.round((new Date(r.fi)-new Date(r.lp))/86400000);
     if(d>0){r.dur=d;const dt=new Date(r.fi);r.mc=dt.getMonth()+1;r.ac=dt.getFullYear();}
@@ -1568,6 +1593,16 @@ function renderCierres(){
     <td><div class="cell">${fmtDate(r.fco)||(miss?'<span style="color:var(--red);font-weight:600">Falta</span>':'<span class="hint">—</span>')}</div></td>
     <td><div class="cell">${fmtDate(r.fi)||(miss?'<span style="color:var(--red);font-weight:600">Falta</span>':'<span class="hint">—</span>')}</div></td>
     <td><div class="cell">${r.diasDesdeIngreso!==null?r.diasDesdeIngreso+' días':'<span class="hint">—</span>'}</div></td>
+    <td><div class="cell">${(()=>{
+      if(!r.gar) return '<span class="hint">—</span>';
+      if(!r.fi) return '<span class="hint">Sin ingreso</span>';
+      const fin = new Date(r.fi);
+      fin.setMonth(fin.getMonth() + r.gar);
+      const enGarantia = today <= fin;
+      const diasRestantes = Math.round((fin - today) / 86400000);
+      if(enGarantia) return '<span class="badge" style="background:#E8F5E9;border:1px solid #81C784;color:#2E7D32">En garantía</span>';
+      return '<span class="badge" style="background:#FFEBEE;border:1px solid #E57373;color:#C62828">Vencida</span>';
+    })()}</div></td>
     <td><div class="cell">${hi?'<span class="badge b-aprobacion">Contactar</span>':''}</div></td>
   </tr>`;
   }).join('');
@@ -1580,6 +1615,7 @@ function renderCierres(){
       <th class="sort" onclick="sortCierreBy('fco')">Fecha cierre (Firma CO) ${si('fco')}</th>
       <th class="sort" onclick="sortCierreBy('fi')">Fecha Ingreso ${si('fi')}</th>
       <th class="sort" onclick="sortCierreBy('diasDesdeIngreso')">Días desde ingreso ${si('diasDesdeIngreso')}</th>
+      <th>Garantía</th>
       <th>Contactar</th>
     </tr></thead>
     <tbody>${rows}</tbody>
@@ -1616,11 +1652,13 @@ function saveNew(){
   if(!emp||!proc){alert('Empresa y cargo son obligatorios.');return;}
   const tipo=document.getElementById('n-tipo').value;
   const rep=document.getElementById('n-rep').value;
-  DATA.push({id:nextId++,emp,proc,tipo,c1:document.getElementById('n-c1').value,c2:document.getElementById('n-c2').value,ap:document.getElementById('n-ap').value,st:'Activo',et:document.getElementById('n-et').value,rep,acep:null,lp:null,apr:null,ll:null,fco:null,fi:null,cand:'',sp:'',dur:null,mc:null,ac:null});
+  const gar=document.getElementById('n-gar').value?Number(document.getElementById('n-gar').value):null;
+  DATA.push({id:nextId++,emp,proc,tipo,c1:document.getElementById('n-c1').value,c2:document.getElementById('n-c2').value,ap:document.getElementById('n-ap').value,st:'Activo',et:document.getElementById('n-et').value,rep,acep:null,lp:null,apr:null,ll:null,fco:null,fi:null,cand:'',sp:'',dur:null,mc:null,ac:null,gar});
   closeNew();
   saveToSheets(DATA[DATA.length-1]); // Save new record to Sheets
   ['n-emp','n-proc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('n-rep').value='NO';
+  document.getElementById('n-gar').value='3';
   ['n-tipo','n-c1','n-c2','n-ap','n-et'].forEach(id=>document.getElementById(id).value='');
   initSelects();render();
 }
@@ -1733,6 +1771,38 @@ async function saveToSheets(record) {
   } finally {
     isSaving = false;
   }
+}
+
+async function syncAll() {
+  if(!confirm('¿Sincronizar todos los datos con Google Sheets? Esto puede tardar unos segundos.')) return;
+  showStatus('Sincronizando todos los registros...', 'loading');
+  let ok = 0, errors = 0;
+  for(const r of DATA) {
+    try {
+      const sheetRecord = {
+        id: r.id, Empresa: r.emp, Cargo: r.proc, Tipo: r.tipo, N: r.n || '',
+        Consultora1: r.c1, Consultora2: r.c2, Apoyo: r.ap, Status: r.st,
+        Etapa: r.et, Reposicion: r.rep,
+        AceptacionPropuesta: r.acep || '', LevantamientoPerfil: r.lp || '',
+        AprobacionPerfil: r.apr || '', LongList: r.ll || '',
+        FirmaCO: r.fco || '', FechaIngreso: r.fi || '',
+        CandidatoSeleccionado: r.cand, Notas: r.sp,
+        Duracion: r.dur || '', MesCierre: r.mc || '', AnioCierre: r.ac || '',
+      };
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'save', record: sheetRecord }),
+      });
+      const json = await res.json();
+      if(json.error) throw new Error(json.error);
+      ok++;
+    } catch(err) {
+      errors++;
+      console.error('Error syncing id=' + r.id, err);
+    }
+  }
+  if(errors === 0) showStatus(`Sincronización completa ✓ — ${ok} registros guardados`, 'ok');
+  else showStatus(`Sincronización parcial — ${ok} OK, ${errors} errores`, 'error');
 }
 
 async function deleteFromSheets(id) {

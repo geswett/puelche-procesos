@@ -1670,7 +1670,7 @@ function saveNew(){
 
 
 // ─── PERSISTENCIA — Google Sheets Backend ─────────────────────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1w10s6zmnZAPXvhLGNKwTiAc9brrzZHX2eiV9qbRYIuh3pFtxxO6NJlGmJaJTIvEz/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLA7Jz6AVWPEw3hL0uEAOl7-Jded8tJpyk_QzeCaMo9j5NzItucJIX_pMpI3nR6Xot/exec';
 let isSaving = false;
 
 function showStatus(msg, type='info') {
@@ -1714,6 +1714,7 @@ async function loadFromSheets() {
       dur: r.Duracion ? Number(r.Duracion) : null,
       mc: r.MesCierre ? Number(r.MesCierre) : null,
       ac: r.AnioCierre ? Number(r.AnioCierre) : null,
+      gar: r.Garantia ? Number(r.Garantia) : null,
     }));
 
     nextId = Math.max(...DATA.map(r => r.id), 0) + 1;

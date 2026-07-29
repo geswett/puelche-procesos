@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puelche HC — Estado del proceso</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F6F3;color:#1A1A1A;min-height:100vh;display:flex;flex-direction:column}
+  .header{background:#fff;border-bottom:1px solid #E5E2DC;padding:16px 24px;display:flex;align-items:center;gap:14px}
+  .logo{font-size:18px;font-weight:700;letter-spacing:-0.5px}
+  .logo span{color:#2D6A4F}
+  .header-sub{font-size:12px;color:#888;margin-top:2px}
+  .main{flex:1;display:flex;align-items:center;justify-content:center;padding:32px 16px}
+  .card{background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08);padding:32px;max-width:680px;width:100%}
+  .cargo{font-size:22px;font-weight:700;margin-bottom:4px;line-height:1.3}
+  .empresa{font-size:14px;color:#666;margin-bottom:16px}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .badge{display:inline-flex;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600}
+  .b-activo{background:#E8F5EE;color:#1A6B53;border:1px solid #A8D8C8}
+  .b-inicio{background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE}
+  .b-medio{background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA}
+  .b-final{background:#F0FDF4;color:#166534;border:1px solid #86EFAC}
+  .b-aprobacion{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+  .b-cerrado{background:#F1F5F9;color:#475569;border:1px solid #CBD5E1}
+  .b-suspendido{background:#FFF1F2;color:#9F1239;border:1px solid #FECDD3}
+  .tl-wrap{background:#F7F6F3;border-radius:10px;padding:20px 16px;margin-bottom:24px}
+  .tl{display:flex;align-items:flex-start;overflow-x:auto;padding-bottom:4px}
+  .tl-step{display:flex;flex-direction:column;align-items:center;flex:1;min-width:80px}
+  .tl-line{flex:1;height:2px;background:#E5E2DC;margin-top:6px}
+  .tl-line.done{background:#2D6A4F}
+  .tl-dot{width:14px;height:14px;border-radius:50%;background:#E5E2DC;border:2px solid #E5E2DC}
+  .tl-dot.done{background:#2D6A4F;border-color:#2D6A4F}
+  .tl-dot.next{background:#fff;border-color:#2D6A4F}
+  .tl-lbl{font-size:10px;color:#888;margin-top:6px;text-align:center;line-height:1.3}
+  .tl-dt{font-size:11px;font-weight:600;color:#1A1A1A;margin-top:3px;text-align:center}
+  .tl-conn{display:flex;align-items:center;flex:1;padding-top:6px}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+  .info-item label{font-size:11px;color:#888;display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px}
+  .info-item span{font-size:14px;font-weight:500}
+  .footer{text-align:center;padding:20px;font-size:12px;color:#aaa}
+  .loading{text-align:center;padding:48px;color:#888}
+  .error{text-align:center;padding:48px;color:#C62828}
+  hr{border:none;border-top:1px solid #E5E2DC;margin:20px 0}
+  .confidencial{font-size:11px;color:#aaa;text-align:center;margin-top:16px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="logo">Puel<span>che.</span></div>
+    <div class="header-sub">HUMAN CONSULTING</div>
+  </div>
+</div>
+
+<div class="main">
+  <div id="content" class="card">
+    <div class="loading">Cargando información del proceso...</div>
+  </div>
+</div>
+
+<div class="footer">Puelche Human Consulting · Este link es de uso confidencial</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwueymfuYEJk-df37tGM82XumJmS6ODU8MTRDeAAJrJbw7hdjMliRtpc24FuE4pk6OG/exec';
+
+const MESES = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function fmtDate(d) {
+  if (!d) return null;
+  const parts = d.split('-');
+  if (parts.length !== 3) return d;
+  return `${parts[2]}/${MESES[parseInt(parts[1])]}/${parts[0].slice(2)}`;
+}
+
+function badgeClass(et) {
+  const m = {
+    'Inicio':'b-inicio','Medio':'b-medio','Final':'b-final',
+    'Esperando Aprobación':'b-aprobacion','Stand By':'b-aprobacion',
+    'Cerrado':'b-cerrado','Suspendido':'b-suspendido'
+  };
+  return m[et] || 'b-cerrado';
+}
+
+function render(r) {
+  const steps = [
+    {l:'Acept. Propuesta', d: r.AceptacionPropuesta},
+    {l:'Lev. Perfil',      d: r.LevantamientoPerfil},
+    {l:'Aprob. Perfil',    d: r.AprobacionPerfil},
+    {l:'Long List',        d: r.LongList},
+    {l:'Firma CO',         d: r.FirmaCO},
+    {l:'Ingreso',          d: r.FechaIngreso},
+  ];
+  const lastDone = steps.reduce((a,s,i) => s.d ? i : a, -1);
+
+  let tl = '<div class="tl">';
+  steps.forEach((s, i) => {
+    const done = !!s.d;
+    const next = !done && i === lastDone + 1;
+    if (i > 0) tl += `<div class="tl-conn"><div class="tl-line${i <= lastDone ? ' done' : ''}"></div></div>`;
+    tl += `<div class="tl-step">
+      <div class="tl-dot${done?' done':next?' next':''}"></div>
+      <div class="tl-lbl">${s.l}</div>
+      <div class="tl-dt">${fmtDate(s.d)||'—'}</div>
+    </div>`;
+  });
+  tl += '</div>';
+
+  const etLabel = r.Etapa === 'Esperando Aprobación' ? 'Esp. Aprobación' : (r.Etapa || '—');
+
+  document.getElementById('content').innerHTML = `
+    <div class="cargo">${r.Cargo}</div>
+    <div class="empresa">${r.Empresa}${r.Tipo ? ' · ' + r.Tipo : ''}</div>
+    <div class="badges">
+      <span class="badge ${badgeClass(r.Etapa)}">${etLabel}</span>
+      <span class="badge b-activo">${r.Status}</span>
+    </div>
+    <div class="tl-wrap">${tl}</div>
+    <div class="info-grid">
+      <div class="info-item"><label>Consultora</label><span>${[r.Consultora1, r.Consultora2].filter(Boolean).join(', ') || '—'}</span></div>
+      <div class="info-item"><label>Apoyo</label><span>${r.Apoyo || '—'}</span></div>
+      ${r.CandidatoSeleccionado ? `<div class="info-item"><label>Candidato seleccionado</label><span>${r.CandidatoSeleccionado}</span></div>` : ''}
+    </div>
+    <div class="confidencial">🔒 Información confidencial — uso exclusivo del cliente</div>
+  `;
+}
+
+async function load() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (!id) {
+    document.getElementById('content').innerHTML = '<div class="error">URL inválida — falta el parámetro de proceso.</div>';
+    return;
+  }
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=getAll');
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+    const record = json.records.find(r => String(r.id) === String(id));
+    if (!record) {
+      document.getElementById('content').innerHTML = '<div class="error">Proceso no encontrado.</div>';
+      return;
+    }
+    render(record);
+  } catch(err) {
+    document.getElementById('content').innerHTML = `<div class="error">Error al cargar: ${err.message}</div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>

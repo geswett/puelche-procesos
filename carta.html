@@ -126,11 +126,28 @@ function render(r) {
   `;
 }
 
+const SECRET = 'PHC2024puelche';
+
+async function generateToken(id) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(id + ':' + SECRET);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2,'0')).join('').slice(0,12);
+}
+
 async function load() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get('id');
-  if (!id) {
-    document.getElementById('content').innerHTML = '<div class="error">URL inválida — falta el parámetro de proceso.</div>';
+  const token = params.get('token');
+  if (!id || !token) {
+    document.getElementById('content').innerHTML = '<div class="error">Link inválido.</div>';
+    return;
+  }
+  // Verify token
+  const expected = await generateToken(id);
+  if (token !== expected) {
+    document.getElementById('content').innerHTML = '<div class="error">Link no autorizado.</div>';
     return;
   }
   try {

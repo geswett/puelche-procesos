@@ -994,17 +994,26 @@ function makeCell(rowId,field,display,editType,opts=null){
 }
 
 // ─── DETAIL ─────────────────────────────────────────────────────────────────
-function shareProcess(){
+const SECRET = 'PHC2024puelche';
+
+async function generateToken(id) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(id + ':' + SECRET);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2,'0')).join('').slice(0,12);
+}
+
+async function shareProcess(){
   const id = currentDetailId;
-  if(!id && id !== 0) return;
-  // Build the carta.html URL relative to current page
-  const base = window.location.href.replace(/\/[^\/]*$/, '') + '/carta.html';
-  const url = base + '?id=' + id;
-  // Copy to clipboard
+  if(id === null || id === undefined) return;
+  const token = await generateToken(id);
+  const base = window.location.href.replace(/index\.html.*$/, '').replace(/\?.*$/, '');
+  const cleanBase = base.endsWith('/') ? base : base + '/';
+  const url = cleanBase + 'carta.html?id=' + id + '&token=' + token;
   navigator.clipboard.writeText(url).then(()=>{
     showStatus('Link copiado al portapapeles ✓', 'ok');
   }).catch(()=>{
-    // Fallback: show the URL in a prompt
     window.prompt('Copia este link para compartir con tu cliente:', url);
   });
 }

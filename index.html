@@ -857,7 +857,7 @@ function workday(dateStr, days){
 }
 
 // Auto-calc Long List when aprobación perfil is set
-function calcLL(apr){ return workday(apr, 10); }
+function calcLL(apr){ return workday(apr, 9); }
 // Carga: 1.25 for Gerente, 1 otherwise
 function calcCarga(r){ return (r.tipo==='Gerente' || (r.n && r.n>1)) ? 1.25 : 1.0; }
 

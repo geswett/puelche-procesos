@@ -844,16 +844,31 @@ let curTab='procesos',sortCol='emp',sortDir=1;
 let activeCell=null;
 
 // ─── WORKDAY: +N días hábiles (lun-vie) ────────────────────────────────────
+// Chilean public holidays (add more as needed)
+const CL_HOLIDAYS = new Set([
+  '2026-01-01','2026-04-03','2026-04-04','2026-05-01','2026-05-21',
+  '2026-06-29','2026-07-16','2026-08-15','2026-09-18','2026-09-19',
+  '2026-10-12','2026-10-31','2026-11-01','2026-12-08','2026-12-25',
+  '2025-01-01','2025-04-18','2025-04-19','2025-05-01','2025-05-21',
+  '2025-06-29','2025-07-16','2025-08-15','2025-09-18','2025-09-19',
+  '2025-10-12','2025-10-31','2025-11-01','2025-12-08','2025-12-25',
+  '2027-01-01','2027-04-02','2027-04-03','2027-05-01','2027-05-21',
+  '2027-06-29','2027-07-16','2027-08-15','2027-09-18','2027-09-19',
+  '2027-10-12','2027-10-31','2027-11-01','2027-12-08','2027-12-25',
+]);
 function workday(dateStr, days){
   if(!dateStr) return null;
-  let d = new Date(dateStr);
+  // Parse as local date (avoid UTC timezone shift)
+  const [y,m,d] = dateStr.split('-').map(Number);
+  let date = new Date(y, m-1, d);
   let added = 0;
   while(added < days){
-    d.setDate(d.getDate()+1);
-    const dow = d.getDay();
-    if(dow!==0 && dow!==6) added++;
+    date.setDate(date.getDate()+1);
+    const dow = date.getDay();
+    const iso = date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
+    if(dow!==0 && dow!==6 && !CL_HOLIDAYS.has(iso)) added++;
   }
-  return d.toISOString().split('T')[0];
+  return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
 }
 
 // Auto-calc Long List when aprobación perfil is set

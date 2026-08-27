@@ -431,7 +431,7 @@ function CONS_OPTS(){ return CONSULTORAS.map(c=>c.k); }
 function APOYO_OPTS(){ return APOYOS.map(a=>a.k); }
 
 // ─── DATA ───────────────────────────────────────────────────────────────────
-const FIELDS=['id','emp','proc','tipo','n','c1','c2','ap','st','et','rep','acep','lp','apr','ll','fco','fi','cand','sp','dur','mc','ac','gar'];
+const FIELDS=['id','emp','proc','tipo','n','c1','c2','ap','st','et','rep','acep','lp','apr','ll','fco','fi','cand','sp','dur','mc','ac','gar','contactado'];
 let DATA=[
 [0,"AQUACHILE","Analista de Compensaciones","",1,"","","","Inactivo","","",null,"2023-10-03","2023-10-10","2023-10-24",null,null,"","",994,null,null],
 [1,"AQUACHILE","Analista de Reclutamiento y Selección","",null,"","","","Inactivo","","",null,"2023-05-03","2023-10-10","2023-10-24",null,null,"","",994,null,null],
@@ -1579,6 +1579,18 @@ function addPerson(type){
 }
 
 // ─── MAIN RENDER ─────────────────────────────────────────────────────────────
+function toggleContactado(id){
+  const r = DATA.find(x=>x.id===id); if(!r) return;
+  r.contactado = (r.contactado==='SI') ? 'NO' : 'SI';
+  saveToSheets(r);
+  render();
+}
+function setCierre(id, field, value){
+  const r = DATA.find(x=>x.id===id); if(!r) return;
+  r[field] = value;
+  saveToSheets(r);
+  render();
+}
 let cierreSortCol='fco', cierreSortDir=-1;
 function sortCierreBy(col){
   if(cierreSortCol===col) cierreSortDir*=-1; else {cierreSortCol=col; cierreSortDir=1;}
@@ -1599,7 +1611,7 @@ function renderCierres(){
     return {...r, diasDesdeIngreso: dias};
   });
 
-  const inRange = r => r.diasDesdeIngreso!==null && r.diasDesdeIngreso>=80 && r.diasDesdeIngreso<=100;
+  const inRange = r => r.diasDesdeIngreso!==null && r.diasDesdeIngreso>=80 && r.diasDesdeIngreso<=100 && r.contactado!=='SI';
   const missingDates = r => !r.fco && !r.fi;
   const sorted = [...cierres].sort((a,b)=>{
     // Only the 80-100 days range is pinned to top; missing-dates rows sort normally (just highlighted red)
@@ -1647,6 +1659,11 @@ function renderCierres(){
       return '<span class="badge" style="background:#FFEBEE;border:1px solid #E57373;color:#C62828">Vencida</span>';
     })()}</div></td>
     <td><div class="cell">${hi?'<span class="badge b-aprobacion">Contactar</span>':''}</div></td>
+    <td onclick="toggleContactado(${r.id})" style="cursor:pointer"><div class="cell">
+      ${r.contactado==='SI'
+        ? '<span class="badge" style="background:#E8F5E9;border:1px solid #81C784;color:#2E7D32">Sí</span>'
+        : '<span class="badge" style="background:#FFEBEE;border:1px solid #E57373;color:#C62828">No</span>'}
+    </div></td>
   </tr>`;
   }).join('');
 
@@ -1660,6 +1677,7 @@ function renderCierres(){
       <th class="sort" onclick="sortCierreBy('diasDesdeIngreso')">Días desde ingreso ${si('diasDesdeIngreso')}</th>
       <th>Garantía</th>
       <th>Contactar</th>
+      <th>Contactado</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
@@ -1758,6 +1776,7 @@ async function loadFromSheets() {
       mc: r.MesCierre ? Number(r.MesCierre) : null,
       ac: r.AnioCierre ? Number(r.AnioCierre) : null,
       gar: r.Garantia ? Number(r.Garantia) : null,
+      contactado: r.Contactado || 'NO',
     }));
 
     nextId = Math.max(...DATA.map(r => r.id), 0) + 1;
@@ -1802,6 +1821,7 @@ async function saveToSheets(record) {
       MesCierre: record.mc || '',
       AnioCierre: record.ac || '',
       Garantia: record.gar || '',
+      Contactado: record.contactado || 'NO',
     };
     const res = await fetch(SCRIPT_URL, {
       method: 'POST',
@@ -1833,6 +1853,7 @@ async function syncAll() {
         FirmaCO: r.fco || '', FechaIngreso: r.fi || '',
         CandidatoSeleccionado: r.cand, Notas: r.sp,
         Duracion: r.dur || '', MesCierre: r.mc || '', AnioCierre: r.ac || '', Garantia: r.gar || '',
+        Contactado: r.contactado || 'NO',
       };
       const res = await fetch(SCRIPT_URL, {
         method: 'POST',

@@ -415,12 +415,13 @@ let CONSULTORAS = [
   {k:'RA', n:'Rosario Arratia'},
   {k:'MJC', n:'María José Castaño'},
   {k:'CC', n:'Carla Cerón'},
+  {k:'MK', n:'Monserrat Kunz'},
 ];
 let APOYOS = [
-  {k:'CdV', n:'Catalina del Valle'},
   {k:'CSC', n:'Carmen Santa Cruz'},
   {k:'MJC', n:'María José Castaño'},
   {k:'CC', n:'Carla Cerón'},
+  {k:'MK', n:'Monserrat Kunz'},
 ];
 
 function CMAP(k){ 
@@ -1780,6 +1781,17 @@ async function loadFromSheets() {
     }));
 
     nextId = Math.max(...DATA.map(r => r.id), 0) + 1;
+    // Load equipo from Sheets
+    try {
+      const eqRes = await fetch(SCRIPT_URL + '?action=getEquipo');
+      const eqJson = await eqRes.json();
+      if (!eqJson.error && eqJson.consultoras && eqJson.consultoras.length > 0) {
+        CONSULTORAS.length = 0;
+        eqJson.consultoras.forEach(p => CONSULTORAS.push(p));
+        APOYOS.length = 0;
+        eqJson.apoyos.forEach(p => APOYOS.push(p));
+      }
+    } catch(e) { console.warn('No se pudo cargar equipo:', e); }
     initSelects();
     render();
     showStatus('Datos cargados ✓', 'ok');

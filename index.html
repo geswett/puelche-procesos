@@ -1732,7 +1732,7 @@ function saveNew(){
 
 
 // ─── PERSISTENCIA — Google Sheets Backend ─────────────────────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwueymfuYEJk-df37tGM82XumJmS6ODU8MTRDeAAJrJbw7hdjMliRtpc24FuE4pk6OG/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwL4D6TViI9892lqsbrthI-lX8tKc7wQqDND9YiWTp5Oe0TQD17xeAYF_Pt_o3GCiPk/exec';
 let isSaving = false;
 
 function showStatus(msg, type='info') {
@@ -1751,6 +1751,13 @@ async function loadFromSheets() {
     const res = await fetch(SCRIPT_URL + '?action=getAll');
     const json = await res.json();
     if (json.error) throw new Error(json.error);
+    // DEBUG: find a record with dates and log all its keys and values
+    if (json.records && json.records.length > 0) {
+      console.log('DEBUG KEYS:', Object.keys(json.records[0]).join(', '));
+      // Find first record that has any date
+      const withDate = json.records.find(r => r.AceptacionPropuesta || r.LevantamientoPerfil || r.AprobacionPerfil);
+      console.log('DEBUG record con fecha:', JSON.stringify(withDate || json.records[0]));
+    }
 
     // Convert sheet records to app format
     DATA = json.records.map(r => ({

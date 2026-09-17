@@ -334,6 +334,7 @@ tr:hover .del-btn{opacity:1}
   <div class="nf"><label>Consultora 1</label><select id="n-c1"><option value="">— Sin asignar —</option></select></div>
   <div class="nf"><label>Consultora 2 (opcional)</label><select id="n-c2"><option value="">— Sin segunda —</option></select></div>
   <div class="nf"><label>Apoyo</label><select id="n-ap"><option value="">— Sin apoyo —</option></select></div>
+  <div class="nf"><label>Apoyo 2</label><select id="n-ap2"><option value="">— Sin apoyo 2 —</option></select></div>
   <div class="nf"><label>Etapa</label>
     <select id="n-et"><option value="">— Sin etapa —</option><option value="Esperando Aprobación">Esperando Aprobación</option><option value="Stand By">Stand By</option><option value="Inicio">Inicio</option><option value="Medio">Medio</option><option value="Final">Final</option></select>
   </div>
@@ -449,7 +450,7 @@ function CONS_OPTS(){ return CONSULTORAS.map(c=>c.k); }
 function APOYO_OPTS(){ return APOYOS.map(a=>a.k); }
 
 // ─── DATA ───────────────────────────────────────────────────────────────────
-const FIELDS=['id','emp','proc','tipo','n','c1','c2','ap','st','et','rep','acep','lp','apr','ll','fco','fi','cand','sp','dur','mc','ac','gar','contactado'];
+const FIELDS=['id','emp','proc','tipo','n','c1','c2','ap','ap2','st','et','rep','acep','lp','apr','ll','fco','fi','cand','sp','dur','mc','ac','gar','contactado'];
 let DATA=[
 [0,"AQUACHILE","Analista de Compensaciones","",1,"","","","Inactivo","","",null,"2023-10-03","2023-10-10","2023-10-24",null,null,"","",994,null,null],
 [1,"AQUACHILE","Analista de Reclutamiento y Selección","",null,"","","","Inactivo","","",null,"2023-05-03","2023-10-10","2023-10-24",null,null,"","",994,null,null],
@@ -904,8 +905,8 @@ function etapaBadge(et, full){
   const label = (et==='Esperando Aprobación' && !full) ? 'Esp. Aprob.' : (et==='Stand By' && !full) ? 'Stand By' : (et||'—');
   return`<span class="badge ${m[et]||'b-vacio'}">${label}</span>`;
 }
-function pills(c1,c2,ap){
-  return(c1?`<span class="cons-pill">${c1}</span>`:'')+(c2?`<span class="cons-pill">${c2}</span>`:'')+(ap?`<span class="cons-pill ap">${ap}</span>`:'');
+function pills(c1,c2,ap,ap2){
+  return(c1?`<span class="cons-pill">${c1}</span>`:'')+(c2?`<span class="cons-pill">${c2}</span>`:'')+(ap?`<span class="cons-pill ap">${ap}</span>`:'')+(ap2?`<span class="cons-pill ap">${ap2}</span>`:'');
 }
 const ETAPA_OPTS=['','Esperando Aprobación','Stand By','Inicio','Medio','Final','Cerrado','Suspendido'];
 const TIPO_OPTS=['','Gerente','Jefatura','Profesional'];
@@ -918,7 +919,7 @@ function fillSel(id,opts){
   opts.forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=`${k} — ${CMAP(k)}`;el.appendChild(o);});
 }
 function initSelects(){
-  fillSel('n-c1',CONS_OPTS()); fillSel('n-c2',CONS_OPTS()); fillSel('n-ap',APOYO_OPTS());
+  fillSel('n-c1',CONS_OPTS()); fillSel('n-c2',CONS_OPTS()); fillSel('n-ap',APOYO_OPTS()); fillSel('n-ap2',APOYO_OPTS());
 
   // Populate team filter checkboxes
   const consItems = document.getElementById('team-cons-items');
@@ -1020,6 +1021,7 @@ function makeCell(rowId,field,display,editType,opts=null){
         <div class="cons-row"><span class="cons-lbl">1ª</span><select class="cell-select" onchange="commitCell(${rowId},'c1',this.value)"><option value="">—</option>${mkO(CONS_OPTS(),'c1')}</select></div>
         <div class="cons-row"><span class="cons-lbl">2ª</span><select class="cell-select" onchange="commitCell(${rowId},'c2',this.value)"><option value="">—</option>${mkO(CONS_OPTS(),'c2')}</select></div>
         <div class="cons-row"><span class="cons-lbl">Ap</span><select class="cell-select" onchange="commitCell(${rowId},'ap',this.value)"><option value="">—</option>${mkO(APOYO_OPTS(),'ap')}</select></div>
+        <div class="cons-row"><span class="cons-lbl">Ap2</span><select class="cell-select" onchange="commitCell(${rowId},'ap2',this.value)"><option value="">—</option>${mkO(APOYO_OPTS(),'ap2')}</select></div>
       </div></td>`;
     }
   }
@@ -1280,10 +1282,11 @@ function renderProcesos(){
   const rows=sorted.map(r=>{
     const consActive=activeCell&&activeCell.rowId===r.id&&activeCell.field==='c1';
     const consCell=consActive?makeCell(r.id,'c1','','cons'):
-      `<td class="editable" onclick="activeCell={rowId:${r.id},field:'c1'};render()"><div class="cell">${pills(r.c1,r.c2,r.ap)||'<span class="hint">—</span>'}</div></td>`;
+      `<td class="editable" onclick="activeCell={rowId:${r.id},field:'c1'};render()"><div class="cell">${pills(r.c1,r.c2,r.ap,r.ap2)||'<span class="hint">—</span>'}</div></td>`;
     return`<tr>
       <td style="cursor:pointer" onclick="openDetail(${r.id})"><div class="cell"><strong>${r.emp}</strong></div></td>
       <td style="cursor:pointer;max-width:280px" onclick="openDetail(${r.id})"><div class="cell" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:var(--text2)">${r.proc}</span></div></td>
+      <td><div class="cell">${r.rep==='SI'?'<span class="badge" style="background:#FFEBEE;border:1px solid #E57373;color:#C62828;font-size:10px;padding:2px 6px">Rep.</span>':''}</div></td>
       ${consCell}
       ${makeCell(r.id,'et',etapaBadge(r.et),'select',ETAPA_OPTS)}
       ${makeCell(r.id,'acep',fmtDate(r.acep)?`<span style="font-size:11px">${fmtDate(r.acep)}</span>`:'','date')}
@@ -1300,6 +1303,7 @@ function renderProcesos(){
     <thead><tr>
       <th class="sort" onclick="sortBy('emp')">Empresa ${si('emp')}</th>
       <th class="sort" onclick="sortBy('proc')" style="min-width:200px">Cargo ${si('proc')}</th>
+      <th>Rep.</th>
       <th class="sort" onclick="sortBy('c1')" style="min-width:120px">Consultoras ${si('c1')}</th>
       <th class="sort" onclick="sortBy('et')" style="min-width:80px">Etapa ${si('et')}</th>
       <th class="sort" onclick="sortBy('acep')" style="min-width:60px;font-size:10px">Acept. Prop. ${si('acep')}</th>
@@ -1759,7 +1763,7 @@ function saveNew(){
   const tipo=document.getElementById('n-tipo').value;
   const rep=document.getElementById('n-rep').value;
   const gar=document.getElementById('n-gar').value?Number(document.getElementById('n-gar').value):null;
-  DATA.push({id:nextId++,emp,proc,tipo,c1:document.getElementById('n-c1').value,c2:document.getElementById('n-c2').value,ap:document.getElementById('n-ap').value,st:'Activo',et:document.getElementById('n-et').value,rep,acep:null,lp:null,apr:null,ll:null,fco:null,fi:null,cand:'',sp:'',dur:null,mc:null,ac:null,gar});
+  DATA.push({id:nextId++,emp,proc,tipo,c1:document.getElementById('n-c1').value,c2:document.getElementById('n-c2').value,ap:document.getElementById('n-ap').value,ap2:document.getElementById('n-ap2').value||'',st:'Activo',et:document.getElementById('n-et').value,rep,acep:null,lp:null,apr:null,ll:null,fco:null,fi:null,cand:'',sp:'',dur:null,mc:null,ac:null,gar});
   closeNew();
   saveToSheets(DATA[DATA.length-1]); // Save new record to Sheets
   ['n-emp','n-proc'].forEach(id=>document.getElementById(id).value='');
@@ -1813,6 +1817,7 @@ async function loadFromSheets() {
       c1: r.Consultora1 || '',
       c2: r.Consultora2 || '',
       ap: r.Apoyo || '',
+      ap2: r.Apoyo2 || '',
       st: r.Status || 'Activo',
       et: r.Etapa || '',
       rep: r.Reposicion || '',
@@ -1869,6 +1874,7 @@ async function saveToSheets(record) {
       Consultora1: record.c1,
       Consultora2: record.c2,
       Apoyo: record.ap,
+      Apoyo2: record.ap2 || '',
       Status: record.st,
       Etapa: record.et,
       Reposicion: record.rep,

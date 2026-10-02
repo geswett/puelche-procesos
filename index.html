@@ -272,6 +272,9 @@ tr:hover .del-btn{opacity:1}
         <input type="checkbox" class="et-cb et-inactivo" value="Suspendido" onchange="etapaCbChanged()"> Suspendido
       </label>
       <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
+        <input type="checkbox" class="et-cb et-inactivo" value="No Aprobado" onchange="etapaCbChanged()"> No Aprobado
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 28px;cursor:pointer;font-size:12px">
         <input type="checkbox" class="et-cb et-inactivo" value="" onchange="etapaCbChanged()"> Sin etapa
       </label>
     </div>
@@ -901,14 +904,14 @@ function fmtDate(d){
   try{const p=d.split('-');return`${p[2]}/${p[1]}/${p[0].slice(2)}`;}catch{return '';}
 }
 function etapaBadge(et, full){
-  const m={Cerrado:'b-cerrado',Suspendido:'b-suspendido',Inicio:'b-inicio',Medio:'b-medio',Final:'b-final','Esperando Aprobación':'b-aprobacion','Stand By':'b-aprobacion'};
+  const m={Cerrado:'b-cerrado',Suspendido:'b-suspendido','No Aprobado':'b-suspendido',Inicio:'b-inicio',Medio:'b-medio',Final:'b-final','Esperando Aprobación':'b-aprobacion','Stand By':'b-aprobacion'};
   const label = (et==='Esperando Aprobación' && !full) ? 'Esp. Aprob.' : (et==='Stand By' && !full) ? 'Stand By' : (et||'—');
   return`<span class="badge ${m[et]||'b-vacio'}">${label}</span>`;
 }
 function pills(c1,c2,ap,ap2){
   return(c1?`<span class="cons-pill">${c1}</span>`:'')+(c2?`<span class="cons-pill">${c2}</span>`:'')+(ap?`<span class="cons-pill ap">${ap}</span>`:'')+(ap2?`<span class="cons-pill ap">${ap2}</span>`:'');
 }
-const ETAPA_OPTS=['','Esperando Aprobación','Stand By','Inicio','Medio','Final','Cerrado','Suspendido'];
+const ETAPA_OPTS=['','Esperando Aprobación','Stand By','Inicio','Medio','Final','Cerrado','Suspendido','No Aprobado'];
 const TIPO_OPTS=['','Gerente','Jefatura','Profesional'];
 const MESES=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 

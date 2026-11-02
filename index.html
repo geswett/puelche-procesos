@@ -1350,17 +1350,23 @@ function renderCargas(){
   function statsForKey(k){
     const EA = 'Esperando Aprobación';
     const SB = 'Stand By';
+    const ETAPAS = ['Inicio','Medio','Final'];
     // Exclude EA and SB from both count and ponderado
     const asCons  = activos.filter(r => (r.c1===k || r.c2===k) && r.et!==EA && r.et!==SB);
     const asApoyo = activos.filter(r => r.ap===k && r.et!==EA && r.et!==SB);
     const consPond  = asCons.reduce((a,r) => a + pondCons(r,k), 0);
     const apoyoPond = asApoyo.reduce((a,r) => a + pondApoyo(r), 0);
+    // Desglose por etapa
+    const consEtapa  = {}; ETAPAS.forEach(e => consEtapa[e]  = asCons.filter(r=>r.et===e).length);
+    const apoyoEtapa = {}; ETAPAS.forEach(e => apoyoEtapa[e] = asApoyo.filter(r=>r.et===e).length);
     return {
       consTot:  asCons.length,
       apTot:    asApoyo.length,
       consPond,
       apoyoPond,
       totalPond: consPond + apoyoPond,
+      consEtapa,
+      apoyoEtapa,
     };
   }
 
@@ -1369,13 +1375,19 @@ function renderCargas(){
   const EA_SB = ['Esperando Aprobación','Stand By'];
   const totConsProcUniq = activos.filter(r => (r.c1 || r.c2) && !EA_SB.includes(r.et)).length;
   let totConsPond = 0;
+  // totals for etapa breakdown
+  const totConsEtapa = {Inicio:0, Medio:0, Final:0};
   const consRows = CONSULTORAS.map(p => {
     const s = statsForKey(p.k);
-    if(!s.consTot) return ''; // ocultar si no tiene procesos activos
+    if(!s.consTot) return '';
     totConsPond += s.consPond;
+    ['Inicio','Medio','Final'].forEach(e => totConsEtapa[e] += s.consEtapa[e]);
     const cls = s.consPond>=6?'pond-hi':s.consPond>=3?'pond-md':'pond-lo';
     return `<tr><td class="name">${p.k} — ${p.n}</td>
       <td class="total">${s.consTot}</td>
+      <td class="total cg-et" style="display:none">${s.consEtapa.Inicio||0}</td>
+      <td class="total cg-et" style="display:none">${s.consEtapa.Medio||0}</td>
+      <td class="total cg-et" style="display:none">${s.consEtapa.Final||0}</td>
       <td class="total"><span class="${cls}">${s.consPond.toFixed(1)}</span></td>
     </tr>`;
   }).join('');
@@ -1385,13 +1397,18 @@ function renderCargas(){
   const uniqueApoyos = APOYOS.filter((v,i,a) => a.findIndex(x=>x.k===v.k)===i);
   const totApProcUniq = activos.filter(r => r.ap && !EA_SB.includes(r.et)).length;
   let totApPond = 0;
+  const totApEtapa = {Inicio:0, Medio:0, Final:0};
   const apRows = uniqueApoyos.map(p => {
     const s = statsForKey(p.k);
-    if(!s.apTot) return ''; // ocultar si no tiene procesos activos
+    if(!s.apTot) return '';
     totApPond += s.apoyoPond;
+    ['Inicio','Medio','Final'].forEach(e => totApEtapa[e] += s.apoyoEtapa[e]);
     const cls = s.apoyoPond>=6?'pond-hi':s.apoyoPond>=3?'pond-md':'pond-lo';
     return `<tr><td class="name">${p.k} — ${p.n}</td>
       <td class="total">${s.apTot}</td>
+      <td class="total ag-et" style="display:none">${s.apoyoEtapa.Inicio||0}</td>
+      <td class="total ag-et" style="display:none">${s.apoyoEtapa.Medio||0}</td>
+      <td class="total ag-et" style="display:none">${s.apoyoEtapa.Final||0}</td>
       <td class="total"><span class="${cls}">${s.apoyoPond.toFixed(1)}</span></td>
     </tr>`;
   }).join('');
@@ -1420,16 +1437,44 @@ function renderCargas(){
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
     <div>
       <div class="sec">Consultoras</div>
-      <div class="ct-wrap"><table class="ct">
-        <thead><tr><th class="left">Nombre</th><th>Total proc.</th><th>Ponderado</th></tr></thead>
-        <tbody>${consRows}<tr class="total-row"><td class="name">Total</td><td class="total">${totConsProcUniq}</td><td class="total"><span class="${totCls}">${totConsPond.toFixed(1)}</span></td></tr></tbody>
+      <div class="ct-wrap"><table class="ct" id="cg-table">
+        <thead><tr>
+          <th class="left">Nombre</th>
+          <th>Total proc. <button onclick="toggleEtapaCols('cg')" id="cg-btn" title="Ver desglose por etapa" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:0 2px;line-height:1">▶</button></th>
+          <th class="cg-et" style="display:none;color:var(--purple);font-size:11px">Inicio</th>
+          <th class="cg-et" style="display:none;color:#1A5A8F;font-size:11px">Medio</th>
+          <th class="cg-et" style="display:none;color:var(--accent);font-size:11px">Final</th>
+          <th>Ponderado</th>
+        </tr></thead>
+        <tbody>${consRows}<tr class="total-row">
+          <td class="name">Total</td>
+          <td class="total">${totConsProcUniq}</td>
+          <td class="total cg-et" style="display:none">${totConsEtapa.Inicio}</td>
+          <td class="total cg-et" style="display:none">${totConsEtapa.Medio}</td>
+          <td class="total cg-et" style="display:none">${totConsEtapa.Final}</td>
+          <td class="total"><span class="${totCls}">${totConsPond.toFixed(1)}</span></td>
+        </tr></tbody>
       </table></div>
     </div>
     <div>
       <div class="sec">Apoyos</div>
-      <div class="ct-wrap"><table class="ct">
-        <thead><tr><th class="left">Nombre</th><th>Total proc.</th><th>Ponderado</th></tr></thead>
-        <tbody>${apRows}<tr class="total-row"><td class="name">Total</td><td class="total">${totApProcUniq}</td><td class="total"><span class="${totApCls}">${totApPond.toFixed(1)}</span></td></tr></tbody>
+      <div class="ct-wrap"><table class="ct" id="ag-table">
+        <thead><tr>
+          <th class="left">Nombre</th>
+          <th>Total proc. <button onclick="toggleEtapaCols('ag')" id="ag-btn" title="Ver desglose por etapa" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:0 2px;line-height:1">▶</button></th>
+          <th class="ag-et" style="display:none;color:var(--purple);font-size:11px">Inicio</th>
+          <th class="ag-et" style="display:none;color:#1A5A8F;font-size:11px">Medio</th>
+          <th class="ag-et" style="display:none;color:var(--accent);font-size:11px">Final</th>
+          <th>Ponderado</th>
+        </tr></thead>
+        <tbody>${apRows}<tr class="total-row">
+          <td class="name">Total</td>
+          <td class="total">${totApProcUniq}</td>
+          <td class="total ag-et" style="display:none">${totApEtapa.Inicio}</td>
+          <td class="total ag-et" style="display:none">${totApEtapa.Medio}</td>
+          <td class="total ag-et" style="display:none">${totApEtapa.Final}</td>
+          <td class="total"><span class="${totApCls}">${totApPond.toFixed(1)}</span></td>
+        </tr></tbody>
       </table></div>
     </div>
   </div>
@@ -1443,6 +1488,16 @@ function renderCargas(){
   </div>`;
 }
 
+
+// ─── TOGGLE ETAPA COLS ───────────────────────────────────────────────────────
+function toggleEtapaCols(prefix){
+  const btn = document.getElementById(prefix+'-btn');
+  const cells = document.querySelectorAll('.'+prefix+'-et');
+  const open = btn.textContent === '▼';
+  cells.forEach(c => c.style.display = open ? 'none' : '');
+  btn.textContent = open ? '▶' : '▼';
+  btn.title = open ? 'Ver desglose por etapa' : 'Ocultar desglose';
+}
 
 // ─── RENDER TIEMPOS ──────────────────────────────────────────────────────────
 // ─── TIEMPOS DATA ─────────────────────────────────────────────────────────────

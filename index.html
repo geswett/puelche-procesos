@@ -1375,13 +1375,17 @@ function renderCargas(){
   const EA_SB = ['Esperando Aprobación','Stand By'];
   const totConsProcUniq = activos.filter(r => (r.c1 || r.c2) && !EA_SB.includes(r.et)).length;
   let totConsPond = 0;
-  // totals for etapa breakdown
-  const totConsEtapa = {Inicio:0, Medio:0, Final:0};
+  // totals por etapa: contar procesos únicos (no suma de personas)
+  const EA_SB2 = ['Esperando Aprobación','Stand By'];
+  const totConsEtapa = {
+    Inicio: activos.filter(r => (r.c1||r.c2) && r.et==='Inicio').length,
+    Medio:  activos.filter(r => (r.c1||r.c2) && r.et==='Medio').length,
+    Final:  activos.filter(r => (r.c1||r.c2) && r.et==='Final').length,
+  };
   const consRows = CONSULTORAS.map(p => {
     const s = statsForKey(p.k);
     if(!s.consTot) return '';
     totConsPond += s.consPond;
-    ['Inicio','Medio','Final'].forEach(e => totConsEtapa[e] += s.consEtapa[e]);
     const cls = s.consPond>=6?'pond-hi':s.consPond>=3?'pond-md':'pond-lo';
     return `<tr><td class="name">${p.k} — ${p.n}</td>
       <td class="total">${s.consTot}</td>
@@ -1397,12 +1401,15 @@ function renderCargas(){
   const uniqueApoyos = APOYOS.filter((v,i,a) => a.findIndex(x=>x.k===v.k)===i);
   const totApProcUniq = activos.filter(r => r.ap && !EA_SB.includes(r.et)).length;
   let totApPond = 0;
-  const totApEtapa = {Inicio:0, Medio:0, Final:0};
+  const totApEtapa = {
+    Inicio: activos.filter(r => r.ap && r.et==='Inicio').length,
+    Medio:  activos.filter(r => r.ap && r.et==='Medio').length,
+    Final:  activos.filter(r => r.ap && r.et==='Final').length,
+  };
   const apRows = uniqueApoyos.map(p => {
     const s = statsForKey(p.k);
     if(!s.apTot) return '';
     totApPond += s.apoyoPond;
-    ['Inicio','Medio','Final'].forEach(e => totApEtapa[e] += s.apoyoEtapa[e]);
     const cls = s.apoyoPond>=6?'pond-hi':s.apoyoPond>=3?'pond-md':'pond-lo';
     return `<tr><td class="name">${p.k} — ${p.n}</td>
       <td class="total">${s.apTot}</td>

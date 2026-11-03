@@ -368,6 +368,7 @@ tr:hover .del-btn{opacity:1}
   <div class="modal-hdr"><div class="modal-title">Cerrar proceso</div><button class="mc" onclick="closeEdit()">×</button></div>
   <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Completa los datos de cierre para <strong id="e-title"></strong></div>
   <div class="nf"><label>Candidato seleccionado</label><input id="e-cand" placeholder="Nombre del candidato"></div>
+  <div class="nf"><label>Renta Líquida Cierre</label><input id="e-renta" type="number" placeholder="Ej: 2500000" min="0" style="width:100%;box-sizing:border-box"></div>
   <div class="nf"><label>Firma Carta Oferta</label><input type="date" id="e-fco"></div>
   <div class="nf"><label>Ingreso candidato</label><input type="date" id="e-fi"></div>
   <div class="nf"><label>Garantía (meses)</label>
@@ -453,7 +454,7 @@ function CONS_OPTS(){ return CONSULTORAS.map(c=>c.k); }
 function APOYO_OPTS(){ return APOYOS.map(a=>a.k); }
 
 // ─── DATA ───────────────────────────────────────────────────────────────────
-const FIELDS=['id','emp','proc','tipo','n','c1','c2','ap','ap2','st','et','rep','acep','lp','apr','ll','fco','fi','cand','sp','dur','mc','ac','gar','contactado'];
+const FIELDS=['id','emp','proc','tipo','n','c1','c2','ap','ap2','st','et','rep','acep','lp','apr','ll','fco','fi','cand','sp','dur','mc','ac','gar','contactado','renta'];
 let DATA=[
 [0,"AQUACHILE","Analista de Compensaciones","",1,"","","","Inactivo","","",null,"2023-10-03","2023-10-10","2023-10-24",null,null,"","",994,null,null],
 [1,"AQUACHILE","Analista de Reclutamiento y Selección","",null,"","","","Inactivo","","",null,"2023-05-03","2023-10-10","2023-10-24",null,null,"","",994,null,null],
@@ -975,6 +976,7 @@ function openEdit(id){
   const r=DATA.find(x=>x.id===id); if(!r)return;
   document.getElementById('e-title').textContent=r.proc+' — '+r.emp;
   document.getElementById('e-cand').value=r.cand||'';
+  document.getElementById('e-renta').value=r.renta||'';
   document.getElementById('e-fco').value=r.fco||'';
   document.getElementById('e-fi').value=r.fi||'';
   document.getElementById('e-gar').value=r.gar||'';
@@ -989,6 +991,7 @@ function closeEdit(){
 function saveEdit(){
   const r=DATA.find(x=>x.id===editingId); if(!r){closeEdit();return;}
   r.cand=document.getElementById('e-cand').value.trim();
+  r.renta=document.getElementById('e-renta').value?Number(document.getElementById('e-renta').value):null;
   r.fco=document.getElementById('e-fco').value||null;
   r.fi=document.getElementById('e-fi').value||null;
   r.gar=document.getElementById('e-gar').value?Number(document.getElementById('e-gar').value):null;
@@ -1082,7 +1085,7 @@ function openDetail(id){
     <div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap">${etapaBadge(r.et,true)}<span class="badge ${r.st==='Activo'?'b-activo':'b-vacio'}">${r.st}</span>${r.rep==='SI'?'<span class="badge b-suspendido">Reposición</span>':''}</div>
     ${tlHTML}
     <div class="d-grid">${df('Consultora 1',r.c1?r.c1+' — '+CMAP(r.c1):null)}${df('Consultora 2',r.c2?r.c2+' — '+CMAP(r.c2):null)}${df('Apoyo',r.ap?r.ap+' — '+CMAP(r.ap):null)}</div>
-    ${r.cand?`<div class="cand-box"><label>Candidato seleccionado</label><span>${r.cand}</span></div>`:''}
+    ${r.cand?`<div class="cand-box"><label>Candidato seleccionado</label><div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span>${r.cand}</span>${r.renta?`<span style="font-size:12px;font-weight:500;color:var(--accent);white-space:nowrap">$ ${r.renta.toLocaleString('es-CL')} liq.</span>`:''}</div></div>`:''}
     ${r.dur&&r.dur<500?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Duración: <strong>${r.dur} días</strong>${r.mc?' · Cierre '+r.mc+'/'+r.ac:''}</div>`:''}
     ${r.sp?`<div class="notes-box"><label>Notas</label><p>${r.sp}</p></div>`:''}
   `;

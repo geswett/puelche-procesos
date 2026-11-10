@@ -1903,6 +1903,7 @@ async function loadFromSheets() {
       ac: r.AnioCierre ? Number(r.AnioCierre) : null,
       gar: r.Garantia ? Number(r.Garantia) : null,
       contactado: r.Contactado || 'NO',
+      renta: r.Renta ? Number(r.Renta) : null,
     }));
 
     nextId = Math.max(...DATA.map(r => r.id), 0) + 1;
@@ -1960,6 +1961,7 @@ async function saveToSheets(record) {
       AnioCierre: record.ac || '',
       Garantia: record.gar || '',
       Contactado: record.contactado || 'NO',
+      Renta: record.renta || '',
     };
     const res = await fetch(SCRIPT_URL, {
       method: 'POST',
@@ -1991,7 +1993,7 @@ async function syncAll() {
         FirmaCO: r.fco || '', FechaIngreso: r.fi || '',
         CandidatoSeleccionado: r.cand, Notas: r.sp,
         Duracion: r.dur || '', MesCierre: r.mc || '', AnioCierre: r.ac || '', Garantia: r.gar || '',
-        Contactado: r.contactado || 'NO',
+        Contactado: r.contactado || 'NO', Renta: r.renta || '',
       };
       const res = await fetch(SCRIPT_URL, {
         method: 'POST',

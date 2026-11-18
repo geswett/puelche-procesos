@@ -1906,6 +1906,13 @@ async function loadFromSheets() {
       renta: r.Renta ? Number(r.Renta) : null,
     }));
 
+    // Recalculate dur/mc/ac for records missing Duracion but having fco+apr
+    DATA.forEach(r => {
+      if(!r.dur && r.fco && r.apr){
+        const d=Math.round((new Date(r.fco)-new Date(r.apr))/86400000);
+        if(d>0){r.dur=d;const dt=new Date(r.fco);r.mc=dt.getMonth()+1;r.ac=dt.getFullYear();}
+      }
+    });
     nextId = Math.max(...DATA.map(r => r.id), 0) + 1;
     // Load equipo from Sheets
     try {

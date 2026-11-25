@@ -329,7 +329,8 @@ tr:hover .del-btn{opacity:1}
 <div class="overlay" id="ov-new">
 <div class="modal">
   <div class="modal-hdr"><div class="modal-title">Nuevo proceso</div><button class="mc" onclick="closeNew()">×</button></div>
-  <div class="nf"><label>Empresa</label><input id="n-emp" placeholder="Ej: CERMAQ"></div>
+  <div class="nf"><label>Empresa</label><input id="n-emp" placeholder="Ej: CERMAQ" list="emp-list" oninput="autoSigla()" autocomplete="off"><datalist id="emp-list"></datalist></div>
+  <div class="nf"><label>Sigla</label><input id="n-sig" placeholder="Ej: CMQ" maxlength="6" style="text-transform:uppercase"></div>
   <div class="nf"><label>Cargo</label><input id="n-proc" placeholder="Ej: Gerente de Operaciones"></div>
   <div class="nf"><label>Tipo de cargo</label>
     <select id="n-tipo"><option value="">— Sin tipo —</option><option value="Gerente">Gerente</option><option value="Jefatura">Jefatura</option><option value="Profesional">Profesional</option></select>
@@ -1291,7 +1292,7 @@ function renderProcesos(){
     const consCell=consActive?makeCell(r.id,'c1','','cons'):
       `<td class="editable" onclick="activeCell={rowId:${r.id},field:'c1'};render()"><div class="cell">${pills(r.c1,r.c2,r.ap,r.ap2)||'<span class="hint">—</span>'}</div></td>`;
     return`<tr>
-      <td style="cursor:pointer" onclick="openDetail(${r.id})"><div class="cell"><strong>${r.emp}</strong></div></td>
+      <td style="cursor:pointer" onclick="openDetail(${r.id})"><div class="cell"><strong>${r.emp}</strong>${r.sig?`<span style="display:block;font-size:10px;color:var(--text3);margin-top:1px">${r.sig}</span>`:''}</div></td>
       <td style="cursor:pointer;max-width:280px" onclick="openDetail(${r.id})"><div class="cell" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:var(--text2)">${r.proc}</span></div></td>
       <td><div class="cell">${r.rep==='SI'?'<span class="badge" style="background:#FFEBEE;border:1px solid #E57373;color:#C62828;font-size:10px;padding:2px 6px">Rep.</span>':''}</div></td>
       ${consCell}
@@ -1822,8 +1823,94 @@ function render(){
   }
 }
 
+// ─── SIGLAS ───────────────────────────────────────────────────────────────────
+const SIGLAS_MAP = {
+  '++ZEPEDA':'ZEP','180 SUR':'180','ABASTIBLE':'ABA','ABE STORE':'ABS','ACHS':'ACH',
+  'ACUICOLA ALAS':'AAL','AGRICOLA CRAN':'ACR','AGRICOLA LA BALLICA':'ALB','AGROTRIMMA':'AGR',
+  'AKVA GROUP':'AKV','ALDEA CRSH':'CRH','ALERCE':'ALER','ALIMEX':'ALX','ALISUR':'ALI',
+  'ALIMENTOS DEL MAR':'FRS','ALIMENTOS MULTIEXPORT':'MUX','ALMACIGUERA':'ALM',
+  'ALTAS CUMBRES':'ALC','AQUACHILE':'AQC','AQUAGEN':'AQG','AQUAGESTION':'AGT',
+  'AQUAPRIME':'AQP','ARRATIA':'COA','ARTVISION':'AVS','ASTORECA':'AST',
+  'AUSTRAL GRANOS':'AUG','AUSTRAL PACK':'AUP','AUSTRALIS':'AUS',
+  'BADINOTTI':'BAD','BANPRO':'BAN','BARRACO LODGE':'BLO','BAYAS DEL SUR':'BYS',
+  'BEKAERT':'BEK','BEMAQ':'GRB','BENCHMARK':'BCH','BILLUND AQUACULTURE':'BIL',
+  'BIOFILTRO':'BIO','BIOMAR':'BMR','BIOMASA SW':'BSW','BODEGAS SAN FRANCISCO':'BSF',
+  'BOOMSEARCH':'BOO','BSF':'BSF',
+  'CABAÑAS FORANEO':'FOR','CABAÑAS TUNGULU':'TUN','CALETA BAY':'CBY',
+  'CAMANCHACA':'CAM','CAMANCHACA CULTIVOS SUR':'CAM','CAMPOS AUSTRALES':'CAU',
+  'CAMPOS PAILLACO':'CPA','CAREN':'CAR','CARGILL':'CGL','CAROLINA TOLEDO':'CTO',
+  'CATALUÑA':'CAT','CCLS':'CCL','CECINAS LLANQUIHUE':'CLL','CECINAS SCHWENCKE':'CSH',
+  'CELTEX':'CEL','CENTRO DE CAPACITACION LECHERO DEL SUR':'CCL',
+  'CENTRO DE CAPACITACIÓN LECHERO DEL SUR':'CCL','CERMAQ':'CMQ','CITECMA':'CIT',
+  'CLINICA PUERTO VARAS':'CPV','CLUB INNOVACION ACUICOLA':'CIA','COMACO':'COM',
+  'COMERCIAL ARRATIA':'COA','COMERCIAL AUSTRAL':'CAL','COMERCIAL LAS INVERNADAS':'CIN',
+  'COMOSA':'CMS','COOKE':'COO','CORASA':'COR','CORPORACION DEL SUR':'CSU',
+  'CORPORACION NIÑOS PV':'CNP','CPI EQUIPMENT':'CEQ',
+  'D&C':'DCG','D&C GROUP':'DCG','DANICH':'DAN','DECIMA PROPIEDADES':'DPR',
+  'DELL ORTO':'DOR','DERCORP':'DER','DIIO':'DII','DIGITAL BLUE':'TAS',
+  'EASYWOOD':'EAS','EB METRICS':'EME','ECOCERT':'ECO','ECOSALMON':'ECS',
+  'EDEN LOGISTICS':'ELO','EL CONSTRUCTOR':'CON','ELECMETAL':'ELE','EMBIO':'EMB',
+  'EMPACK':'EMP','EMPANADAS PV':'EPV','EMPRESAS PEREZ CRUZ':'EPC','ENGLER':'ENG',
+  'ENSAMBLE':'ENS','ENVASES CHILOE':'WEN','ESTACION ROCK':'ERO',
+  'FEROSOR':'FER','FIBRA CONSULTORES':'FCO','FID SEGUROS':'FSE','FIN PARTNER':'FPA',
+  'FINAL CUT':'FCU','FIORDO AUSTRAL':'FAU','FISHPLUS':'FIS','FLOORCENTER':'FLO',
+  'FRASAL':'FRA','FREEVAC':'FRE','FRIGOSORNO':'FRI','FRIOPAC':'FRS','FRIOSUR':'FRS',
+  'FULGHUM FIBRES':'FFI','FUNDACION CHILE':'FCH','FUNDACION REWILDING':'FUR',
+  'FUNDACIÓN LEGADO CHILE':'FLC','FUNDO BELLAVISTA':'FBE','FUNERARIA HOGAR DE CRISTO':'FHC',
+  'GALILEA':'GAL','GINO':'GGI','GREENSPOT':'GRE','GRIMAR':'FRS',
+  'GRUPO GINO':'GGI','GRUPO MEDIA':'GME','GRUPO NEXO':'GNE','GRUPO PATIO':'GPA',
+  'HABASIT':'HBS','HELADOS PUDU':'HPU','HI-TECH':'HTE',
+  'HOGAR DE NIÑAS LAS CRECHES':'HCR','HOGAR LAS CRECHES':'HCR','HORMIBAL':'HOR',
+  'HOTEL ABBA':'HAB','ABBA HOTELES':'HAB','HOTEL TALBOT':'TAL',
+  'HUBERRY':'HUB','HUIRO REGENERATIVO':'HRE','HYATT':'HYA',
+  'IMAHE':'IMA','INDUSTRIAS GUERRA':'IGU','INGELAGOS':'ING','INGENTEC':'INN',
+  'INMOBILIARIA BAKER':'IBA','BAKER':'IBA','INMUEBLES CATALUNYA':'ICA',
+  'INTEGRA':'INT','ISB':'ISB',
+  'KARÜN':'KAR','KURA':'KUR','KURA BIOTEC':'KUR',
+  'LABORATORIO CIBA':'LCI','LACSUR':'TIL','LARSEN':'LAR','LILAC':'LIL',
+  'LILAC SOLUTIONS':'LIL','LINDE':'LIN','LOGIMAR':'LOG','LONQUEN':'LON','LOS TILOS':'TIL',
+  'M SERVICE':'MSE','MANARE':'MAN','MANUKA':'MNK','MAQSUR':'MAQ','MAQUIRA':'MQR',
+  'MARIA AYUDA':'MAY','MARÍA AYUDA':'MAY','MARIENBERG':'MAR','MARINE FARM':'MFA',
+  'MAS CONSULTORES':'MCO','MEDILAND':'MED','MOWI':'MOW','MULTI X':'MUX',
+  'MULTISEA':'MSA','SALMONES MULTIEXPORT':'MUX','ALIMENTOS MULTIEXPORT':'MUX',
+  'NATPRO':'NAT','NAVIMAG':'NAV','NODO':'NOD',
+  'OXXEAN':'OXX','OXZO':'FAU',
+  'PACIFIC SEAFOOD':'PSE','PERSPECCION':'PER','PERSPECCIÓN':'PER',
+  'PESQUERA FRIOSUR':'FRS','PROCARNE':'PRO','PSP':'PSP','PSP CHILE':'PSP',
+  'PTL':'PTL','PUCLARO':'PUC','PUNTO AUSTRAL':'PAU',
+  'QHIELO':'QHI','QLF LABS':'QLA','QMK':'QMK',
+  'RECAL':'REC','RIA AUSTRAL':'RAU',
+  'SALFA SUR':'SSU','SALMONEXPERT':'SLM','SALMONES CAMANCHACA':'SCA',
+  'SALMONES CAPTREN':'SAC','SANTA TERESA':'STE','SEANERGY':'TAS',
+  'SEBASTIAN VIVALLO':'SVI','SEMILLAS LLANQUIHUE':'SLL','SITECNA':'SIT',
+  'SMT':'FAU','SOLUCENTER':'SLC','SOLUCORP':'SLR','SOLVENTUM':'SOL',
+  'SUN CHEMICAL':'SCH','SUNCHEMICAL':'SCH','SUNQUIMICAL':'SCH','SURALIS':'SUR',
+  'SURMEDICAL':'MED',
+  'TALBOT':'TAL','TASIK':'TAS','TECNOFAST':'TEC','TECNOMET':'TCN','TELBROS':'TEL',
+  'TERMOSUR':'WEN','TERRASUR':'TRR','TMP':'TMP','TORALLA':'TOR',
+  'TRACK GROUP':'TGR','TRACKTEC':'TRA',
+  'VALDICOR':'VAL','VAXXINOVA':'VAX','VENTISQUEROS':'VEN','VERDE SUR':'VSU','VOIPIR':'VOI',
+  'WEC CHILE':'WCH','WENCO':'WEN','WENCO SUR':'WEN',
+};
+
+function autoSigla(){
+  const emp=(document.getElementById('n-emp').value||'').trim().toUpperCase();
+  const sigField=document.getElementById('n-sig');
+  if(!sigField.dataset.manual){
+    const s=SIGLAS_MAP[emp]||'';
+    if(s) sigField.value=s;
+  }
+}
+
+function buildEmpDatalist(){
+  const dl=document.getElementById('emp-list');
+  if(!dl)return;
+  const names=Object.keys(SIGLAS_MAP).sort();
+  dl.innerHTML=names.map(n=>`<option value="${n}">`).join('');
+}
+
 // ─── NEW / CLOSE ─────────────────────────────────────────────────────────────
-function openNew(){document.getElementById('ov-new').classList.add('open');}
+function openNew(){document.getElementById('ov-new').classList.add('open');buildEmpDatalist();}
 function closeNew(){document.getElementById('ov-new').classList.remove('open');}
 function saveNew(){
   const emp=document.getElementById('n-emp').value.trim();
@@ -1832,10 +1919,11 @@ function saveNew(){
   const tipo=document.getElementById('n-tipo').value;
   const rep=document.getElementById('n-rep').value;
   const gar=document.getElementById('n-gar').value?Number(document.getElementById('n-gar').value):null;
-  DATA.push({id:nextId++,emp,proc,tipo,c1:document.getElementById('n-c1').value,c2:document.getElementById('n-c2').value,ap:document.getElementById('n-ap').value,ap2:document.getElementById('n-ap2').value||'',st:'Activo',et:document.getElementById('n-et').value,rep,acep:null,lp:null,apr:null,ll:null,fco:null,fi:null,cand:'',sp:'',dur:null,mc:null,ac:null,gar});
+  const sig=document.getElementById('n-sig').value.trim().toUpperCase();
+  DATA.push({id:nextId++,emp,proc,tipo,sig,c1:document.getElementById('n-c1').value,c2:document.getElementById('n-c2').value,ap:document.getElementById('n-ap').value,ap2:document.getElementById('n-ap2').value||'',st:'Activo',et:document.getElementById('n-et').value,rep,acep:null,lp:null,apr:null,ll:null,fco:null,fi:null,cand:'',sp:'',dur:null,mc:null,ac:null,gar});
   closeNew();
   saveToSheets(DATA[DATA.length-1]); // Save new record to Sheets
-  ['n-emp','n-proc'].forEach(id=>document.getElementById(id).value='');
+  ['n-emp','n-proc','n-sig'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('n-rep').value='NO';
   document.getElementById('n-gar').value='3';
   ['n-tipo','n-c1','n-c2','n-ap','n-et'].forEach(id=>document.getElementById(id).value='');
@@ -1904,6 +1992,7 @@ async function loadFromSheets() {
       gar: r.Garantia ? Number(r.Garantia) : null,
       contactado: r.Contactado || 'NO',
       renta: r.Renta ? Number(r.Renta) : null,
+      sig: r.Sigla || '',
     }));
 
     // Recalculate dur/mc/ac for records missing Duracion but having fco+apr
@@ -1969,6 +2058,7 @@ async function saveToSheets(record) {
       Garantia: record.gar || '',
       Contactado: record.contactado || 'NO',
       Renta: record.renta || '',
+      Sigla: record.sig || '',
     };
     const res = await fetch(SCRIPT_URL, {
       method: 'POST',
@@ -2001,6 +2091,7 @@ async function syncAll() {
         CandidatoSeleccionado: r.cand, Notas: r.sp,
         Duracion: r.dur || '', MesCierre: r.mc || '', AnioCierre: r.ac || '', Garantia: r.gar || '',
         Contactado: r.contactado || 'NO', Renta: r.renta || '',
+        Sigla: r.sig || '',
       };
       const res = await fetch(SCRIPT_URL, {
         method: 'POST',
